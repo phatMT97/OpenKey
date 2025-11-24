@@ -94,10 +94,9 @@ BYTE * OpenKeyHelper::getRegBinary(LPCTSTR key, DWORD& outSize) {
 void OpenKeyHelper::registerRunOnStartup(const int& val) {
 	if (val) {
 		if (vRunAsAdmin) {
-			string path = wideStringToUtf8(getFullPath());
-			char buff[MAX_PATH];
-			sprintf_s(buff, "schtasks /create /sc onlogon /tn OpenKey /rl highest /tr \"%s\" /f", path.c_str());
-			WinExec(buff, SW_HIDE);
+			wstring path = getFullPath();
+			wstring cmd = L"schtasks /create /sc onlogon /tn OpenKey /rl highest /tr \"\\\"" + path + L"\\\"\" /f";
+			_wsystem(cmd.c_str());
 		} else {
 			RegOpenKeyEx(HKEY_CURRENT_USER, _runOnStartupKeyPath, NULL, KEY_ALL_ACCESS, &hKey);
 			wstring path = getFullPath();
@@ -108,7 +107,7 @@ void OpenKeyHelper::registerRunOnStartup(const int& val) {
 		RegOpenKeyEx(HKEY_CURRENT_USER, _runOnStartupKeyPath, NULL, KEY_ALL_ACCESS, &hKey);
 		RegDeleteValue(hKey, _T("OpenKey"));
 		RegCloseKey(hKey);
-		WinExec("schtasks /delete  /tn OpenKey /f", SW_HIDE);
+		_wsystem(L"schtasks /delete /tn OpenKey /f");
 	}
 }
 

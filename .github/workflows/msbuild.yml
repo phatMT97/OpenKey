@@ -5,6 +5,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 env:
   # Path to the solution file relative to the root of the project.
@@ -40,8 +41,8 @@ jobs:
       with:
         name: OpenKey
         path: |
-          ${{env.SOLUTION_FILE_PATH}}/Release/
-          ${{env.SOLUTION_FILE_PATH}}/x64/Release/
+          ${{env.SOLUTION_FILE_PATH}}/x32/
+          ${{env.SOLUTION_FILE_PATH}}/x64/
 
     outputs:
       subject-name: OpenKey
