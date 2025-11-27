@@ -11,7 +11,7 @@ env:
   # Path to the Xcode project relative to the root of the project
   XCODE_PROJECT_PATH: ./Sources/OpenKey/macOS/OpenKey.xcodeproj
   # Scheme name in Xcode project
-  SCHEME: ModernKey
+  SCHEME: OpenKey
   # Build configuration
   BUILD_CONFIGURATION: Release
 
