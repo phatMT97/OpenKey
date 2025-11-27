@@ -146,6 +146,12 @@ void MainControlDialog::initDialog() {
 
     checkTempOffOpenKey = GetDlgItem(hTabPage1, IDC_CHECK_TEMP_OFF_OPEN_KEY);
     createToolTip(checkTempOffOpenKey, IDS_STRING_TEMP_OFF_OPENKEY);
+    
+    checkExcludeApps = GetDlgItem(hTabPage1, IDC_CHECK_EXCLUDE_APPS);
+    createToolTip(checkExcludeApps, IDS_STRING_EXCLUDE_APPS);
+    
+    hBtnManageExcludedApps = GetDlgItem(hTabPage1, IDC_BUTTON_MANAGE_EXCLUDED_APPS);
+    createToolTip(hBtnManageExcludedApps, IDS_STRING_EXCLUDE_APPS);
 
     /*------------end tab 1----------------*/
 
@@ -241,6 +247,9 @@ INT_PTR MainControlDialog::eventProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
             break;
         case IDC_BUTTON_GO_SOURCE_CODE:
             ShellExecute(NULL, _T("open"), _T("https://github.com/tuyenvm/OpenKey"), NULL, NULL, SW_SHOWNORMAL);
+            break;
+        case IDC_BUTTON_MANAGE_EXCLUDED_APPS:
+            AppDelegate::getInstance()->onManageExcludedApps();
             break;
         default:
             if (HIWORD(wParam) == CBN_SELCHANGE) {
@@ -365,6 +374,7 @@ void MainControlDialog::fillData() {
     SendMessage(checkCheckNewVersion, BM_SETCHECK, vCheckNewVersion ? 1 : 0, 0);
     SendMessage(checkUseClipboard, BM_SETCHECK, vSendKeyStepByStep ? 0 : 1, 0);
     SendMessage(checkFixChromium, BM_SETCHECK, vFixChromiumBrowser ? 1 : 0, 0);
+    SendMessage(checkExcludeApps, BM_SETCHECK, vExcludeApps ? 1 : 0, 0);
 
     EnableWindow(checkRestoreIfWrongSpelling, vCheckSpelling);
     EnableWindow(checkAllowZWJF, vCheckSpelling);
@@ -560,6 +570,10 @@ void MainControlDialog::onCheckboxClicked(const HWND& hWnd) {
     else if (hWnd == checkFixChromium) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
         APP_SET_DATA(vFixChromiumBrowser, val ? 1 : 0);
+    }
+    else if (hWnd == checkExcludeApps) {
+        val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
+        APP_SET_DATA(vExcludeApps, val ? 1 : 0);
     }
     SystemTrayHelper::updateData();
 }

@@ -22,9 +22,9 @@ class BaseDialog;
 class AppDelegate {
 private:
 	HINSTANCE hInstance;
-	BaseDialog* mainDialog = NULL, *aboutDialog = NULL, *macroDialog = NULL, *convertDialog = NULL;
+	BaseDialog* mainDialog = NULL, *aboutDialog = NULL, *macroDialog = NULL, *convertDialog = NULL, *excludedAppsDialog = NULL;
 private:
-	bool isDialogMsg(MSG &msg) const;
+	bool isDialogMsg(MSG & msg) const;
 	void checkUpdate();
 public:
 	AppDelegate();
@@ -44,6 +44,7 @@ public: //event
 	void onMacroTable();
 	void onConvertTool();
 	void onQuickConvert();
+	void onManageExcludedApps();
 
 	void onInputType(const int& type);
 	void onTableCode(const int& code);

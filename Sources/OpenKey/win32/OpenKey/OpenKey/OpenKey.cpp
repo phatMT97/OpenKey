@@ -110,6 +110,7 @@ void OpenKeyInit() {
 	APP_GET_DATA(vOtherLanguage, 1);
 	APP_GET_DATA(vTempOffOpenKey, 0);
 	APP_GET_DATA(vFixChromiumBrowser, 0);
+	APP_GET_DATA(vExcludeApps, 1);
 
 	//init convert tool
 	APP_GET_DATA(convertToolDontAlertWhenCompleted, 0);
@@ -162,6 +163,11 @@ void OpenKeyInit() {
 	BYTE* data = OpenKeyHelper::getRegBinary(_T("smartSwitchKey"), smartSwitchKeySize);
 	initSmartSwitchKey((Byte*)data, (int)smartSwitchKeySize);
 
+	//init and load English-only apps data
+	DWORD englishOnlyAppsSize;
+	BYTE* englishOnlyData = OpenKeyHelper::getRegBinary(_T("englishOnlyApps"), englishOnlyAppsSize);
+	initEnglishOnlyApps((Byte*)englishOnlyData, (int)englishOnlyAppsSize);
+
 	//init hook
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardHookProcess, hInstance, 0);
@@ -172,6 +178,12 @@ void OpenKeyInit() {
 void saveSmartSwitchKeyData() {
 	getSmartSwitchKeySaveData(savedSmartSwitchKeyData);
 	OpenKeyHelper::setRegBinary(_T("smartSwitchKey"), savedSmartSwitchKeyData.data(), (int)savedSmartSwitchKeyData.size());
+}
+
+static vector<Byte> savedEnglishOnlyAppsData;
+void saveEnglishOnlyAppsData() {
+	getEnglishOnlyAppsSaveData(savedEnglishOnlyAppsData);
+	OpenKeyHelper::setRegBinary(_T("englishOnlyApps"), savedEnglishOnlyAppsData.data(), (int)savedEnglishOnlyAppsData.size());
 }
 
 static void InsertKeyLength(const Uint8& len) {
@@ -399,6 +411,14 @@ bool checkHotKey(int hotKeyData, bool checkKeyCode = true) {
 }
 
 void switchLanguage() {
+	// Block language switching for English-only apps
+	if (vExcludeApps && isEnglishOnlyApp(OpenKeyHelper::getFrontMostAppExecuteName())) {
+		// Beep to indicate switch is blocked
+		if (HAS_BEEP(vSwitchKeyStatus))
+			MessageBeep(MB_ICONWARNING);
+		return;
+	}
+	
 	if (vLanguage == 0)
 		vLanguage = 1;
 	else
@@ -677,6 +697,20 @@ VOID CALLBACK winEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 		string& exe = OpenKeyHelper::getFrontMostAppExecuteName();
 		if (exe.compare("explorer.exe") == 0) //dont apply with windows explorer
 			return;
+		
+		// Check if this app is in English-only list
+		if (vExcludeApps && isEnglishOnlyApp(exe)) {
+			// Force English mode for excluded apps
+			if (vLanguage != 0) {
+				vLanguage = 0;
+				AppDelegate::getInstance()->onInputMethodChangedFromHotKey();
+			}
+			startNewSession();
+			vTempOffEngine(false);
+			// Don't save to SmartSwitchKey for excluded apps
+			return;
+		}
+		
 		_languageTemp = getAppInputMethodStatus(exe, vLanguage | (vCodeTable << 1));
 		vTempOffEngine(false);
 		if (vUseSmartSwitchKey && (_languageTemp & 0x01) != vLanguage) {

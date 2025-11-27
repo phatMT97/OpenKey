@@ -12,6 +12,7 @@ You can fork, modify, improve this program. If you
 redistribute your new version, it MUST be open source.
 -----------------------------------------------------------*/
 #include "AppDelegate.h"
+#include "ExcludedAppsDialog.h"
 
 static AppDelegate* _instance;
 
@@ -51,11 +52,13 @@ int vRunAsAdmin = 0;
 int vCheckNewVersion = 0;
 //beta feature
 int vFixChromiumBrowser = 0; //new on version 2.0
+int vExcludeApps = 1; //enable/disable exclude apps feature
 
 bool AppDelegate::isDialogMsg(MSG & msg) const {
 	return (mainDialog != NULL && IsDialogMessage(mainDialog->getHwnd(), &msg)) ||
 		(macroDialog != NULL && IsDialogMessage(macroDialog->getHwnd(), &msg)) || 
 		(convertDialog != NULL && IsDialogMessage(convertDialog->getHwnd(), &msg)) || 
+		(excludedAppsDialog != NULL && IsDialogMessage(excludedAppsDialog->getHwnd(), &msg)) ||
 		(aboutDialog != NULL && IsDialogMessage(aboutDialog->getHwnd(), &msg));
 }
 
@@ -155,9 +158,12 @@ void AppDelegate::closeDialog(BaseDialog * dialog) {
 	} else if (macroDialog == dialog) {
 		delete macroDialog;
 		macroDialog = NULL;
-	} else if (convertDialog == dialog) {
+	} 	else if (convertDialog == dialog) {
 		delete convertDialog;
 		convertDialog = NULL;
+	} else if (excludedAppsDialog == dialog) {
+		delete excludedAppsDialog;
+		excludedAppsDialog = NULL;
 	}
 }
 
@@ -265,6 +271,15 @@ void AppDelegate::onQuickConvert() {
 			LoadString(hInstance, IDS_STRING_CONVERT_COMPLETED, msg, 256);
 			MessageBox(NULL, msg, _T("OpenKey"), MB_OK);
 		}
+	}
+}
+
+void AppDelegate::onManageExcludedApps() {
+	if (excludedAppsDialog == NULL) {
+		excludedAppsDialog = new ExcludedAppsDialog(hInstance, IDD_DIALOG_EXCLUDED_APPS);
+		excludedAppsDialog->show();
+	} else {
+		excludedAppsDialog->bringOnTop();
 	}
 }
 

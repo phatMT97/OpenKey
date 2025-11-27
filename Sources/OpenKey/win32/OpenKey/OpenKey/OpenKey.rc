@@ -209,6 +209,9 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,106,204,10
     CONTROL         "Tạm tắt OpenKey bằng phím Alt",IDC_CHECK_TEMP_OFF_OPEN_KEY,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,88,123,10
+    CONTROL         "Loại trừ ứng dụng",IDC_CHECK_EXCLUDE_APPS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,124,70,10
+    PUSHBUTTON      "...",IDC_BUTTON_MANAGE_EXCLUDED_APPS,80,123,15,12
 END
 
 IDD_DIALOG_TAB_MACRO DIALOGEX 0, 0, 299, 177
@@ -282,6 +285,17 @@ BEGIN
                     "SysLink",WS_TABSTOP,117,94,101,10
     LTEXT           "Phien ban",IDC_STATIC_APP_VERSION_INFO,39,50,227,8
     PUSHBUTTON      "Mã nguồn...",IDC_BUTTON_GO_SOURCE_CODE,226,91,50,14
+END
+
+IDD_DIALOG_EXCLUDED_APPS DIALOGEX 0, 0, 350, 280
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Quản lý ứng dụng loại trừ - OpenKey"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_LIST_EXCLUDED_APPS,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,336,230
+    PUSHBUTTON      "Thêm ứng dụng hiện tại",IDC_BUTTON_ADD_CURRENT_APP,7,245,90,20
+    PUSHBUTTON      "Xóa",IDC_BUTTON_DELETE_APP,105,245,50,20
+    DEFPUSHBUTTON   "Đóng",IDOK,293,245,50,20
 END
 
 
@@ -363,6 +377,14 @@ BEGIN
         RIGHTMARGIN, 280
         TOPMARGIN, 9
         BOTTOMMARGIN, 112
+    END
+
+    IDD_DIALOG_EXCLUDED_APPS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 273
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -524,6 +546,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_STRING_FIX_CHROMIUM "Sửa lỗi bị đúp từ trên các trình duyệt Chromium bao gồm Google Chrome, Brave, Microsoft Edge. Tính năng này đang được thử nghiệm. Cần bật tính năng ""Sửa lỗi gợi ý"" để hỗ trợ tính năng này."
+    IDS_STRING_EXCLUDE_APPS "Tích chọn để kích hoạt tính năng loại trừ ứng dụng. Các ứng dụng trong danh sách sẽ luôn sử dụng tiếng Anh và không thể chuyển sang tiếng Việt. Nhấn nút ... để quản lý danh sách."
 END
 
 #endif    // English (United States) resources

@@ -35,4 +35,34 @@ int getAppInputMethodStatus(const string& bundleId, const int& currentInputMetho
  */
 void setAppInputMethodStatus(const string& bundleId, const int& language);
 
+/**
+ * Initialize English-only apps list from saved data
+ */
+void initEnglishOnlyApps(const Byte* pData, const int& size);
+
+/**
+ * Convert all English-only apps data to save on disk
+ */
+void getEnglishOnlyAppsSaveData(vector<Byte>& outData);
+
+/**
+ * Check if an app is in English-only list
+ */
+bool isEnglishOnlyApp(const string& bundleId);
+
+/**
+ * Add an app to English-only list
+ */
+void addEnglishOnlyApp(const string& bundleId);
+
+/**
+ * Remove an app from English-only list
+ */
+void removeEnglishOnlyApp(const string& bundleId);
+
+/**
+ * Get all apps in English-only list
+ */
+void getAllEnglishOnlyApps(vector<string>& apps);
+
 #endif /* SmartSwitchKey_h */

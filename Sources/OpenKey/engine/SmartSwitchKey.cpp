@@ -8,6 +8,7 @@
 
 #include "SmartSwitchKey.h"
 #include <map>
+#include <set>
 #include <iostream>
 #include <memory.h>
 
@@ -70,4 +71,58 @@ void setAppInputMethodStatus(const string& bundleId, const int& language) {
     _smartSwitchKeyData[bundleId] = language;
     _cacheKey = bundleId;
     _cacheData = language;
+}
+
+//English-only apps data
+static std::set<string> _englishOnlyApps;
+
+void initEnglishOnlyApps(const Byte* pData, const int& size) {
+    _englishOnlyApps.clear();
+    if (pData == NULL) return;
+    Uint16 count = 0;
+    Uint32 cursor = 0;
+    if (size >= 2) {
+        memcpy(&count, pData + cursor, 2);
+        cursor += 2;
+    }
+    Uint8 bundleIdSize;
+    for (int i = 0; i < count; i++) {
+        bundleIdSize = pData[cursor++];
+        string bundleId((char*)pData + cursor, bundleIdSize);
+        cursor += bundleIdSize;
+        _englishOnlyApps.insert(bundleId);
+    }
+}
+
+void getEnglishOnlyAppsSaveData(vector<Byte>& outData) {
+    outData.clear();
+    Uint16 count = (Uint16)_englishOnlyApps.size();
+    outData.push_back((Byte)count);
+    outData.push_back((Byte)(count >> 8));
+    
+    for (std::set<string>::iterator it = _englishOnlyApps.begin(); it != _englishOnlyApps.end(); ++it) {
+        outData.push_back((Byte)it->length());
+        for (int j = 0; j < it->length(); j++) {
+            outData.push_back((*it)[j]);
+        }
+    }
+}
+
+bool isEnglishOnlyApp(const string& bundleId) {
+    return _englishOnlyApps.find(bundleId) != _englishOnlyApps.end();
+}
+
+void addEnglishOnlyApp(const string& bundleId) {
+    _englishOnlyApps.insert(bundleId);
+}
+
+void removeEnglishOnlyApp(const string& bundleId) {
+    _englishOnlyApps.erase(bundleId);
+}
+
+void getAllEnglishOnlyApps(vector<string>& apps) {
+    apps.clear();
+    for (std::set<string>::iterator it = _englishOnlyApps.begin(); it != _englishOnlyApps.end(); ++it) {
+        apps.push_back(*it);
+    }
 }

@@ -182,6 +182,13 @@
 #define IDS_STRING_START_CONSONANT      1066
 #define IDS_STRING_END_CONSONANT        1067
 #define IDC_CHECK_OTHER_LANGUAGES       1068
+#define IDC_CHECK_EXCLUDE_APPS          1069
+#define IDC_BUTTON_MANAGE_EXCLUDED_APPS 1070
+#define IDD_DIALOG_EXCLUDED_APPS        150
+#define IDC_LIST_EXCLUDED_APPS          1071
+#define IDC_BUTTON_ADD_CURRENT_APP      1072
+#define IDC_BUTTON_DELETE_APP           1073
+#define IDS_STRING_EXCLUDE_APPS         1074
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -189,9 +196,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        149
+#define _APS_NEXT_RESOURCE_VALUE        151
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1075
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
