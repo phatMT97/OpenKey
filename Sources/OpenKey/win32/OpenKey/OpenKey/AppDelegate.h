@@ -22,9 +22,9 @@ class BaseDialog;
 class AppDelegate {
 private:
 	HINSTANCE hInstance;
-	BaseDialog* mainDialog = NULL, *aboutDialog = NULL, *macroDialog = NULL, *convertDialog = NULL;
+	BaseDialog* mainDialog = NULL, *aboutDialog = NULL, *macroDialog = NULL, *convertDialog = NULL, *excludedAppsDialog = NULL;
 private:
-	bool isDialogMsg(MSG &msg) const;
+	bool isDialogMsg(MSG & msg) const;
 	void checkUpdate();
 public:
 	AppDelegate();
@@ -44,6 +44,7 @@ public: //event
 	void onMacroTable();
 	void onConvertTool();
 	void onQuickConvert();
+	void onManageExcludedApps();
 
 	void onInputType(const int& type);
 	void onTableCode(const int& code);
@@ -52,3 +53,37 @@ public: //event
 	void onOpenKeyAbout();
 	void onOpenKeyExit();
 };
+
+// Global configuration variables
+extern int vLanguage;
+extern int vInputType;
+extern int vFreeMark;
+extern int vCodeTable;
+extern int vCheckSpelling;
+extern int vUseModernOrthography;
+extern int vQuickTelex;
+extern int vSwitchKeyStatus;
+extern int vRestoreIfWrongSpelling;
+extern int vFixRecommendBrowser;
+extern int vUseMacro;
+extern int vUseMacroInEnglishMode;
+extern int vAutoCapsMacro;
+extern int vSendKeyStepByStep;
+extern int vUseSmartSwitchKey;
+extern int vUpperCaseFirstChar;
+extern int vTempOffSpelling;
+extern int vAllowConsonantZFWJ;
+extern int vQuickStartConsonant;
+extern int vQuickEndConsonant;
+extern int vOtherLanguage;
+extern int vRememberCode;
+extern int vTempOffOpenKey;
+extern int vUseGrayIcon;
+extern int vShowOnStartUp;
+extern int vRunWithWindows;
+extern int vSupportMetroApp;
+extern int vCreateDesktopShortcut;
+extern int vRunAsAdmin;
+extern int vCheckNewVersion;
+extern int vFixChromiumBrowser;
+extern int vExcludeApps;
