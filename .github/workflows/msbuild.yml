@@ -2,9 +2,9 @@ name: MSBuild
 
 on:
   push:
-    branches: [ "master", "fix/typing_with_other_lang" ]
+    branches: [ "master"]
   pull_request:
-    branches: [ "master", "fix/typing_with_other_lang" ]
+    branches: [ "master"]
   workflow_dispatch:
 
 env:
