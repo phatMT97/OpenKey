@@ -48,18 +48,30 @@ jobs:
         echo "Build output:"
         find ./build -name "*.app" -type d
 
-    - name: Create zip archive
+    - name: Create DMG installer
       run: |
-        cd ./build/Build/Products/${{env.BUILD_CONFIGURATION}}
-        zip -r OpenKey-macOS.zip *.app
-        mv OpenKey-macOS.zip ${{github.workspace}}/
+        # Create temporary folder for DMG contents
+        mkdir -p dmg_temp
+        cp -R ./build/Build/Products/${{env.BUILD_CONFIGURATION}}/*.app dmg_temp/
+        
+        # Create Applications symlink for easy installation
+        ln -s /Applications dmg_temp/Applications
+        
+        # Create DMG
+        hdiutil create -volname "OpenKey" \
+          -srcfolder dmg_temp \
+          -ov -format UDZO \
+          OpenKey-macOS.dmg
+        
+        # Cleanup
+        rm -rf dmg_temp
 
     - name: Upload Build Artifact
       id: upload
       uses: actions/upload-artifact@v4
       with:
         name: OpenKey-macOS
-        path: OpenKey-macOS.zip
+        path: OpenKey-macOS.dmg
         retention-days: 30
 
     outputs:
