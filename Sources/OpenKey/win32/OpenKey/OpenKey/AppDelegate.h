@@ -53,3 +53,37 @@ public: //event
 	void onOpenKeyAbout();
 	void onOpenKeyExit();
 };
+
+// Global configuration variables
+extern int vLanguage;
+extern int vInputType;
+extern int vFreeMark;
+extern int vCodeTable;
+extern int vCheckSpelling;
+extern int vUseModernOrthography;
+extern int vQuickTelex;
+extern int vSwitchKeyStatus;
+extern int vRestoreIfWrongSpelling;
+extern int vFixRecommendBrowser;
+extern int vUseMacro;
+extern int vUseMacroInEnglishMode;
+extern int vAutoCapsMacro;
+extern int vSendKeyStepByStep;
+extern int vUseSmartSwitchKey;
+extern int vUpperCaseFirstChar;
+extern int vTempOffSpelling;
+extern int vAllowConsonantZFWJ;
+extern int vQuickStartConsonant;
+extern int vQuickEndConsonant;
+extern int vOtherLanguage;
+extern int vRememberCode;
+extern int vTempOffOpenKey;
+extern int vUseGrayIcon;
+extern int vShowOnStartUp;
+extern int vRunWithWindows;
+extern int vSupportMetroApp;
+extern int vCreateDesktopShortcut;
+extern int vRunAsAdmin;
+extern int vCheckNewVersion;
+extern int vFixChromiumBrowser;
+extern int vExcludeApps;
