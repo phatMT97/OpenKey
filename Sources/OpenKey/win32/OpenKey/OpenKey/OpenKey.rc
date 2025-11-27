@@ -206,12 +206,12 @@ BEGIN
     CONTROL         "Tự ghi nhớ bảng mã theo ứng dụng",IDC_CHECK_SMART_SWITCH_CODE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,88,130,10
     CONTROL         "Cho phép gõ trong các ngôn ngữ khác",IDC_CHECK_OTHER_LANGUAGES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,106,204,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,106,130,10
     CONTROL         "Tạm tắt OpenKey bằng phím Alt",IDC_CHECK_TEMP_OFF_OPEN_KEY,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,88,123,10
     CONTROL         "Loại trừ ứng dụng",IDC_CHECK_EXCLUDE_APPS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,124,70,10
-    PUSHBUTTON      "...",IDC_BUTTON_MANAGE_EXCLUDED_APPS,80,123,15,12
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,106,65,10
+    PUSHBUTTON      "...",IDC_BUTTON_MANAGE_EXCLUDED_APPS,218,105,15,12
 END
 
 IDD_DIALOG_TAB_MACRO DIALOGEX 0, 0, 299, 177
