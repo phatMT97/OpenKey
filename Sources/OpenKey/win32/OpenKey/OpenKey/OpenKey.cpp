@@ -661,6 +661,15 @@ LRESULT CALLBACK keyboardHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 		return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
 	}
 
+//if "turn off Vietnamese when in other language" mode on
+if (vOtherLanguage) {
+	// Check if current keyboard layout is non-English (Japanese, Korean, Chinese, etc.)
+	if (!OpenKeyHelper::isCurrentKeyboardEnglish()) {
+		// Skip Vietnamese processing, pass event through unchanged
+		return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+	}
+}
+
 	//handle keyboard (Vietnamese mode only - English mode already returned above)
 	if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
 		//send event signal to Engine

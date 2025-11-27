@@ -47,5 +47,7 @@ public:
 	static wstring getVersionString();
 
 	static wstring getContentOfUrl(LPCTSTR url);
+
+	static bool isCurrentKeyboardEnglish();
 };
 

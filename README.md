@@ -26,8 +26,26 @@ Phiên bản này đã được tối ưu hóa toàn diện để cải thiện 
   - Clipboard retry mechanism (+80% độ tin cậy)
   - Process handle cleanup (zero leaks)
 
-### 🐛 3. Sửa lỗi khởi động cùng Windows
+### 🌏 3. Hỗ trợ gõ tiếng Việt với các ngôn ngữ khác (Multi-language Support)
+Tính năng này giúp bạn linh hoạt chuyển đổi giữa tiếng Việt và các ngôn ngữ khác:
+- **Chức năng**: Tự động phát hiện bàn phím/IME hiện tại (Japanese, Korean, Chinese, v.v.) và tạm tắt xử lý tiếng Việt khi đang dùng ngôn ngữ khác.
+- **Hoạt động**: Khi bật tính năng này, OpenKey sẽ:
+  - ✅ Cho phép bạn gõ tiếng Nhật, Hàn, Trung (các ngôn ngữ CJK) mà **không bị OpenKey can thiệp**
+  - ✅ **Tự động bật lại** xử lý tiếng Việt khi bạn chuyển về bàn phím tiếng Anh
+  - ✅ Không cần tắt/bật OpenKey thủ công khi đổi ngôn ngữ
+- **Hướng dẫn sử dụng**:
+  1. Mở OpenKey settings → Tab "Bộ gõ"
+  2. Tích chọn "Cho phép gõ trong các ngôn ngữ khác"
+  3. Chuyển sang Japanese/Korean/Chinese IME bằng `Win + Space`
+  4. Gõ tiếng Nhật/Hàn/Trung bình thường, không bị ảnh hưởng!
+- **Lưu ý**: Tính năng này mặc định **đã được bật** giống như phiên bản macOS.
+
+### 🐛 4. Sửa lỗi khởi động cùng Windows
 - Khắc phục hoàn toàn lỗi OpenKey không thể tự khởi động cùng Windows khi chạy dưới quyền Administrator nếu đường dẫn thư mục cài đặt có chứa khoảng trắng (Space).
+
+### 🔧 5. Sửa lỗi memory leak trên macOS
+- Khắc phục critical bug memory leak khi phát hiện ngôn ngữ khác (Japanese/Korean) trên macOS.
+- Sửa lỗi sử dụng CFRelease không đúng cách, cải thiện string comparison.
 
 ---
 

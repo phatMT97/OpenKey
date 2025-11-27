@@ -674,14 +674,20 @@ extern "C" {
             {
                 CFArrayRef languages = (CFArrayRef) TISGetInputSourceProperty(isource, kTISPropertyInputSourceLanguages);
                 
-                if (CFArrayGetCount(languages) > 0) {
+                BOOL shouldProcess = YES;  // Default: process Vietnamese
+                if (languages != NULL && CFArrayGetCount(languages) > 0) {
                     CFStringRef langRef = (CFStringRef)CFArrayGetValueAtIndex(languages, 0);
                     NSString *currentLanguage = (__bridge NSString *)langRef;
-                    if(![currentLanguage isLike:@"en"]){
-                        return event;
+                    if(![currentLanguage hasPrefix:@"en"]){
+                        shouldProcess = NO;  // Non-English → skip Vietnamese
                     }
-                    CFRelease(langRef);
-                    CFRelease(isource);
+                    // DON'T release langRef - it's from "Get", not "Copy"
+                }
+                
+                CFRelease(isource);  // Always release isource
+                
+                if (!shouldProcess) {
+                    return event;
                 }
             }
         }

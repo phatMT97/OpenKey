@@ -361,3 +361,32 @@ wstring OpenKeyHelper::getContentOfUrl(LPCTSTR url){
 	}
 	return L"";
 }
+
+/**
+ * Check if current keyboard layout of the foreground window is English
+ * Returns true if English, false if Japanese/Korean/Chinese/etc.
+ * 
+ * Note: Uses GetKeyboardLayout with the foreground window's thread ID,
+ * not the current thread, to get the actual keyboard layout the user is typing with.
+ */
+bool OpenKeyHelper::isCurrentKeyboardEnglish() {
+	// 1. Get handle of the currently active window (where user is typing)
+	HWND hForeground = GetForegroundWindow();
+	if (!hForeground) {
+		return true; // Fallback: treat as English to allow processing
+	}
+
+	// 2. Get Thread ID of that window
+	DWORD targetThreadId = GetWindowThreadProcessId(hForeground, NULL);
+
+	// 3. Get Keyboard Layout of that thread
+	HKL hKL = GetKeyboardLayout(targetThreadId);
+
+	// 4. Extract Language ID (Low word of HKL)
+	// HKL is a pointer value, need to cast to extract LOWORD
+	WORD langId = LOWORD((uintptr_t)hKL);
+	WORD primaryLang = PRIMARYLANGID(langId);
+
+	// 5. Check if it's English
+	return (primaryLang == LANG_ENGLISH);
+}
