@@ -9,12 +9,15 @@ using namespace std;
 class ExcludedAppsDialog : public BaseDialog {
 private:
 	HWND hListView;
+	HWND hEditAppName;
+	HWND hBtnAddManual;
 	HWND hBtnAdd;
 	HWND hBtnDelete;
 	HWND hBtnClose;
 	
 	void initDialog();
 	void refreshList();
+	void onAddManual();
 	void onAddCurrentApp();
 	void onDeleteSelected();
 	

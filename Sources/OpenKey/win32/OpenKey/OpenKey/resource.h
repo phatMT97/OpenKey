@@ -189,6 +189,8 @@
 #define IDC_BUTTON_ADD_CURRENT_APP      1072
 #define IDC_BUTTON_DELETE_APP           1073
 #define IDS_STRING_EXCLUDE_APPS         1074
+#define IDC_EDIT_APP_NAME               1075
+#define IDC_BUTTON_ADD_MANUAL           1076
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
