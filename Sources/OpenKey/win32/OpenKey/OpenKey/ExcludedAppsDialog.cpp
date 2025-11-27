@@ -41,7 +41,7 @@ void ExcludedAppsDialog::initDialog() {
 	lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT;
 	lvc.fmt = LVCFMT_LEFT;
 	lvc.cx = 340;
-	lvc.pszText = (LPWSTR)L"Ứng dụng";
+	lvc.pszText = (LPWSTR)L"\u1ee8ng d\u1ee5ng"; // "Ứng dụng"
 	ListView_InsertColumn(hListView, 0, &lvc);
 	
 	// Enable full row select
@@ -81,7 +81,7 @@ void ExcludedAppsDialog::onAddManual() {
 	GetWindowTextW(hEditAppName, appName, 256);
 	
 	if (lstrlenW(appName) == 0) {
-		MessageBoxW(hDlg, L"Vui lòng nhập tên ứng dụng!", L"OpenKey", MB_OK | MB_ICONWARNING);
+		MessageBoxW(hDlg, L"Vui l\u00f2ng nh\u1eadp t\u00ean \u1ee9ng d\u1ee5ng!", L"OpenKey", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	
@@ -91,7 +91,7 @@ void ExcludedAppsDialog::onAddManual() {
 	WideCharToMultiByte(CP_UTF8, 0, appName, -1, &strAppName[0], size_needed, NULL, NULL);
 	
 	if (isEnglishOnlyApp(strAppName)) {
-		MessageBoxW(hDlg, L"Ứng dụng này đã có trong danh sách!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
+		MessageBoxW(hDlg, L"\u1ee8ng d\u1ee5ng n\u00e0y \u0111\u00e3 c\u00f3 trong danh s\u00e1ch!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
 	
@@ -107,12 +107,12 @@ void ExcludedAppsDialog::onAddCurrentApp() {
 	string& currentApp = OpenKeyHelper::getFrontMostAppExecuteName();
 	
 	if (currentApp.compare("OpenKey64.exe") == 0 || currentApp.compare("OpenKey32.exe") == 0) {
-		MessageBoxW(hDlg, L"Không thể thêm OpenKey vào danh sách loại trừ!", L"OpenKey", MB_OK | MB_ICONWARNING);
+		MessageBoxW(hDlg, L"Kh\u00f4ng th\u1ec3 th\u00eam OpenKey v\u00e0o danh s\u00e1ch lo\u1ea1i tr\u1eeb!", L"OpenKey", MB_OK | MB_ICONWARNING);
 		return;
 	}
 	
 	if (isEnglishOnlyApp(currentApp)) {
-		MessageBoxW(hDlg, L"Ứng dụng này đã có trong danh sách!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
+		MessageBoxW(hDlg, L"\u1ee8ng d\u1ee5ng n\u00e0y \u0111\u00e3 c\u00f3 trong danh s\u00e1ch!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
 	
@@ -125,7 +125,7 @@ void ExcludedAppsDialog::onDeleteSelected() {
 	int selectedIndex = ListView_GetNextItem(hListView, -1, LVNI_SELECTED);
 	
 	if (selectedIndex < 0) {
-		MessageBoxW(hDlg, L"Vui lòng chọn một ứng dụng để xóa!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
+		MessageBoxW(hDlg, L"Vui l\u00f2ng ch\u1ecdn m\u1ed9t \u1ee9ng d\u1ee5ng \u0111\u1ec3 x\u00f3a!", L"OpenKey", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
 	
