@@ -747,13 +747,8 @@ LRESULT CALLBACK mouseHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 VOID CALLBACK winEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-	// Performance optimization: Debounce window switch events
-	static DWORD s_lastSwitchTime = 0;
-	DWORD currentTime = GetTickCount();
-	if (currentTime - s_lastSwitchTime < 100) { // 100ms debounce
-		return;
-	}
-	s_lastSwitchTime = currentTime;
+	// NOTE: Debouncing removed - it was preventing excluded apps detection
+	// The performance impact is acceptable for window switch events
 	
 	//smart switch key
 	if (vUseSmartSwitchKey || vRememberCode) {
