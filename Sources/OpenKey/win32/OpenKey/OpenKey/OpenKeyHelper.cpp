@@ -127,9 +127,18 @@ string& OpenKeyHelper::getFrontMostAppExecuteName() {
 		return _exeNameUtf8;
 	}
 	_cacheProcessId = _tempProcessId;
+	
+	// Performance optimization: Ensure handle is properly closed to prevent leaks
 	_proc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _tempProcessId);
-	GetProcessImageFileName((HMODULE)_proc, _exePath, 1024);
-	CloseHandle(_proc);
+	if (_proc == NULL) {
+		return _unknownProgram; // Failed to open process
+	}
+	
+	if (!GetProcessImageFileName((HMODULE)_proc, _exePath, 1024)) {
+		CloseHandle(_proc);
+		return _unknownProgram; // Failed to get image name
+	}
+	CloseHandle(_proc); // Always close handle after use
 	
 	if (wcscmp(_exePath, _T("")) == 0) {
 		return _unknownProgram;
@@ -152,6 +161,10 @@ string & OpenKeyHelper::getLastAppExecuteName() {
 	if (!vUseSmartSwitchKey)
 		return getFrontMostAppExecuteName();
 	return _exeNameUtf8;
+}
+
+DWORD OpenKeyHelper::getLastProcessID() {
+	return _cacheProcessId;
 }
 
 wstring OpenKeyHelper::getFullPath() {
@@ -193,13 +206,35 @@ wstring OpenKeyHelper::getClipboardText(const int& type) {
 }
 
 void OpenKeyHelper::setClipboardText(LPCTSTR data, const int & len, const int& type) {
-	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(WCHAR));
-	memcpy(GlobalLock(hMem), data, len * sizeof(WCHAR));
-	GlobalUnlock(hMem);
-	OpenClipboard(0);
-	EmptyClipboard();
-	SetClipboardData(type, hMem);
-	CloseClipboard();
+	// Performance optimization: Retry clipboard operations if locked
+	int retries = 3;
+	while (retries-- > 0) {
+		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len * sizeof(WCHAR));
+		if (!hMem) {
+			return; // Memory allocation failed
+		}
+		
+		void* pMem = GlobalLock(hMem);
+		if (!pMem) {
+			GlobalFree(hMem);
+			return;
+		}
+		
+		memcpy(pMem, data, len * sizeof(WCHAR));
+		GlobalUnlock(hMem);
+		
+		if (OpenClipboard(0)) {
+			EmptyClipboard();
+			SetClipboardData(type, hMem);
+			CloseClipboard();
+			return; // Success
+		} else {
+			GlobalFree(hMem); // Failed to open clipboard, free memory
+			if (retries > 0) {
+				Sleep(10); // Wait 10ms before retry
+			}
+		}
+	}
 }
 
 bool OpenKeyHelper::quickConvert() {

@@ -34,6 +34,7 @@ public:
 
 	static string& getFrontMostAppExecuteName();
 	static string& getLastAppExecuteName();
+	static DWORD getLastProcessID();
 
 	static wstring getFullPath();
 

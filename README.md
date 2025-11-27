@@ -23,7 +23,7 @@ Tính năng này cực kỳ hữu ích cho lập trình viên hoặc game thủ:
 OpenKey là bộ gõ tiếng Việt hiện đại, mã nguồn mở với nhiều tính năng mạnh mẽ:
 
 ### Hỗ trợ gõ
-- **Kiểu gõ**: Telex, VNI, Simple Telex.
+- **Kiểu gõ**: Telex, VNI, Simple Telex 1/2.
 - **Bảng mã**: Unicode (Dựng sẵn), TCVN3 (ABC), VNI Windows, Unicode tổ hợp...
 
 ### Tính năng thông minh

@@ -33,6 +33,7 @@ redistribute your new version, it MUST be open source.
 #include <tchar.h>
 #include <string>
 #include <vector>
+#include <map>
 
 #include <shellapi.h>
 #include <Commctrl.h>

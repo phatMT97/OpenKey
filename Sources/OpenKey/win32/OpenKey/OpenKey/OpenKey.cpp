@@ -64,6 +64,18 @@ static vector<Byte> savedSmartSwitchKeyData; ////use for smart switch key
 
 static bool _hasJustUsedHotKey = false;
 
+// Performance optimization: Cache IME window handle and foreground window
+static HWND _cachedForegroundWnd = NULL;
+static HWND _cachedIMEWnd = NULL;
+static DWORD _lastIMECheckTime = 0;
+static const DWORD IME_CACHE_TIMEOUT_MS = 500; // Re-check IME every 500ms
+
+// Performance optimization: PID-based caching for Metro app detection
+// Comparing PID (integer) is much faster than string comparison
+static map<DWORD, bool> _pidToMetroAppCache;
+static DWORD _lastPID = 0;
+static bool _isMetroApp = false;
+
 static INPUT backspaceEvent[2];
 static INPUT keyEvent[2];
 
@@ -167,6 +179,9 @@ void OpenKeyInit() {
 	DWORD englishOnlyAppsSize;
 	BYTE* englishOnlyData = OpenKeyHelper::getRegBinary(_T("englishOnlyApps"), englishOnlyAppsSize);
 	initEnglishOnlyApps((Byte*)englishOnlyData, (int)englishOnlyAppsSize);
+
+	// Performance optimization: Pre-allocate vector to avoid reallocations
+	_newCharString.reserve(256);
 
 	//init hook
 	HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -280,19 +295,47 @@ static void SendKeyCode(Uint32 data) {
 
 static void SendBackspace() {
 	SendInput(2, backspaceEvent, sizeof(INPUT));
-	if (vSupportMetroApp && OpenKeyHelper::getLastAppExecuteName().compare("ApplicationFrameHost.exe") == 0) {//Metro App
-		SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
-		SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+	
+	// Performance optimization: PID-based cache for Metro app check
+	// Much faster than string comparison - only query process name when PID changes
+	if (vSupportMetroApp) {
+		string& exe = OpenKeyHelper::getLastAppExecuteName();
+		DWORD currentPID = OpenKeyHelper::getLastProcessID();
+		
+		if (currentPID != _lastPID) {
+			_lastPID = currentPID;
+			// Check cache first
+			auto it = _pidToMetroAppCache.find(currentPID);
+			if (it != _pidToMetroAppCache.end()) {
+				_isMetroApp = it->second;
+			} else {
+				// Not in cache, check and store
+				_isMetroApp = (exe == "ApplicationFrameHost.exe");
+				_pidToMetroAppCache[currentPID] = _isMetroApp;
+				// Limit cache size to prevent memory bloat
+				if (_pidToMetroAppCache.size() > 100) {
+					_pidToMetroAppCache.clear();
+				}
+			}
+		}
 	}
+	
+	if (_isMetroApp) {
+		// CRITICAL FIX: Use PostMessage instead of SendMessage to avoid blocking
+		// SendMessage with HWND_BROADCAST can freeze if any app is hung or has UIPI restrictions
+		PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+		PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+	}
+	
 	if (IS_DOUBLE_CODE(vCodeTable)) { //VNI or Unicode Compound
 		if (_syncKey.back() > 1) {
 			/*if (!(vCodeTable == 3 && containUnicodeCompoundApp(FRONT_APP))) {
 				SendInput(2, backspaceEvent, sizeof(INPUT));
 			}*/
 			SendInput(2, backspaceEvent, sizeof(INPUT));
-			if (vSupportMetroApp && OpenKeyHelper::getLastAppExecuteName().compare("ApplicationFrameHost.exe") == 0) {//Metro App
-				SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
-				SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+			if (_isMetroApp) {
+				PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+				PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
 			}
 		}
 		_syncKey.pop_back();
@@ -517,11 +560,23 @@ LRESULT CALLBACK keyboardHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 	}
 	
 	//ignore if IME pad is open when typing Japanese/Chinese...
+	// Performance optimization: Cache IME window handle to avoid expensive lookups
 	HWND hWnd = GetForegroundWindow();
-	HWND hIME = ImmGetDefaultIMEWnd(hWnd);
-	LRESULT isImeON = SendMessage(hIME, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0);
-	if (isImeON) {
-		return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+	DWORD currentTime = GetTickCount();
+	
+	// Update cache if window changed or cache expired
+	if (hWnd != _cachedForegroundWnd || (currentTime - _lastIMECheckTime) > IME_CACHE_TIMEOUT_MS) {
+		_cachedForegroundWnd = hWnd;
+		_cachedIMEWnd = ImmGetDefaultIMEWnd(hWnd);
+		_lastIMECheckTime = currentTime;
+	}
+	
+	// Only check if we have a valid cached IME window
+	if (_cachedIMEWnd) {
+		LRESULT isImeON = SendMessage(_cachedIMEWnd, WM_IME_CONTROL, IMC_GETOPENSTATUS, 0);
+		if (isImeON) {
+			return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+		}
 	}
 	
 	//check modifier key
@@ -692,6 +747,14 @@ LRESULT CALLBACK mouseHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 VOID CALLBACK winEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+	// Performance optimization: Debounce window switch events
+	static DWORD s_lastSwitchTime = 0;
+	DWORD currentTime = GetTickCount();
+	if (currentTime - s_lastSwitchTime < 100) { // 100ms debounce
+		return;
+	}
+	s_lastSwitchTime = currentTime;
+	
 	//smart switch key
 	if (vUseSmartSwitchKey || vRememberCode) {
 		string& exe = OpenKeyHelper::getFrontMostAppExecuteName();
@@ -730,8 +793,9 @@ VOID CALLBACK winEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 			}
 		}
 		if (vSupportMetroApp && exe.compare("ApplicationFrameHost.exe") == 0) {//Metro App
-			SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
-			SendMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+			// CRITICAL FIX: Use PostMessage instead of SendMessage to avoid blocking
+			PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
+			PostMessage(HWND_BROADCAST, WM_CHAR, VK_BACK, 0L);
 		}
 	}
 }
