@@ -12,6 +12,8 @@
 #include <list>
 #include "Macro.h"
 
+// OPTIMIZATION P2.1: Lookup tables for O(1) performance instead of O(n) vector search
+// Original vectors kept for reference and initialization
 static vector<Uint8> _charKeyCode = {
     KEY_BACKQUOTE, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUALS,
     KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_BACK_SLASH,
@@ -30,6 +32,35 @@ static vector<Uint8> _breakCode = {
 static vector<Uint8> _macroBreakCode = {
     KEY_RETURN, KEY_COMMA, KEY_DOT, KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE, KEY_BACK_SLASH, KEY_MINUS, KEY_EQUALS
 };
+
+// Lookup tables for O(1) access - initialized in initLookupTables()
+static bool _breakCodeLookup[256] = {false};
+static bool _macroBreakCodeLookup[256] = {false};
+static bool _charKeyCodeLookup[256] = {false};
+
+// Initialize lookup tables for fast O(1) key checking
+void initLookupTables() {
+    // Initialize _breakCodeLookup
+    for (size_t idx = 0; idx < _breakCode.size(); idx++) {
+        if (_breakCode[idx] < 256) {
+            _breakCodeLookup[_breakCode[idx]] = true;
+        }
+    }
+    
+    // Initialize _macroBreakCodeLookup
+    for (size_t idx = 0; idx < _macroBreakCode.size(); idx++) {
+        if (_macroBreakCode[idx] < 256) {
+            _macroBreakCodeLookup[_macroBreakCode[idx]] = true;
+        }
+    }
+    
+    // Initialize _charKeyCodeLookup
+    for (size_t idx = 0; idx < _charKeyCode.size(); idx++) {
+        if (_charKeyCode[idx] < 256) {
+            _charKeyCodeLookup[_charKeyCode[idx]] = true;
+        }
+    }
+}
 
 static Uint16 ProcessingChar[][11] = {
     {KEY_S, KEY_F, KEY_R, KEY_X, KEY_J, KEY_A, KEY_O, KEY_E, KEY_W, KEY_D, KEY_Z}, //Telex
@@ -139,27 +170,25 @@ void* vKeyInit() {
     _typingStatesData.clear();
     _typingStates.clear();
     _longWordHelper.clear();
+    
+    // P2.1: Initialize lookup tables for O(1) performance
+    initLookupTables();
+    
     return &HookState;
 }
 
-bool isWordBreak(const vKeyEvent& event, const vKeyEventState& state, const Uint16& data) {
+// P2.1: Optimized with O(1) lookup table instead of O(n) vector search
+inline bool isWordBreak(const vKeyEvent& event, const vKeyEventState& state, const Uint16& data) {
     if (event == vKeyEvent::Mouse)
         return true;
-    for (i = 0; i < _breakCode.size(); i++) {
-        if (_breakCode[i] == data) {
-            return true;
-        }
-    }
-    return false;
+    // Use lookup table for O(1) performance
+    return (data < 256) && _breakCodeLookup[data];
 }
 
-bool isMacroBreakCode(const int& data) {
-    for (i = 0; i < _macroBreakCode.size(); i++) {
-        if (_macroBreakCode[i] == data) {
-            return true;
-        }
-    }
-    return false;
+// P2.1: Optimized with O(1) lookup table instead of O(n) vector search
+inline bool isMacroBreakCode(const int& data) {
+    // Use lookup table for O(1) performance
+    return (data >= 0 && data < 256) && _macroBreakCodeLookup[data];
 }
 
 void setKeyData(const Byte& index, const Uint16& keyCode, const bool& isCaps) {
@@ -440,7 +469,7 @@ void restoreLastTypingState() {
             if (_typingStatesData[0] == KEY_SPACE) {
                 _spaceCount = (int)_typingStatesData.size();
                 _index = 0;
-            } else if (std::find(_charKeyCode.begin(), _charKeyCode.end(), (Uint16)_typingStatesData[0]) != _charKeyCode.end()) {
+            } else if ((Uint16)_typingStatesData[0] < 256 && _charKeyCodeLookup[(Uint16)_typingStatesData[0]]) {
                 _index = 0;
                 _specialChar = _typingStatesData;
                 checkSpelling();
@@ -1301,7 +1330,7 @@ void vEnglishMode(const vKeyEventState& state, const Uint16& data, const bool& i
         }
     } else {
         if (isWordBreak(vKeyEvent::Keyboard, state, data) &&
-            std::find(_charKeyCode.begin(), _charKeyCode.end(), data) == _charKeyCode.end()) {
+            !(data < 256 && _charKeyCodeLookup[data])) {
             hMacroKey.clear();
             _willTempOffEngine = false;
         } else {
@@ -1341,7 +1370,7 @@ void vKeyHandleEvent(const vKeyEvent& event,
             }
         }
         
-        _isCharKeyCode = state == KeyDown && std::find(_charKeyCode.begin(), _charKeyCode.end(), data) != _charKeyCode.end();
+        _isCharKeyCode = state == KeyDown && (data < 256 && _charKeyCodeLookup[data]);
         if (!_isCharKeyCode) { //clear all line cache
             _specialChar.clear();
             _typingStates.clear();
