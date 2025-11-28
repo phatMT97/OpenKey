@@ -30,6 +30,8 @@
 	<true/>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>OpenKey cần quyền truy cập Accessibility để gõ tiếng Việt.</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Used for keyboard</string>
 	<key>NSHumanReadableCopyright</key>
