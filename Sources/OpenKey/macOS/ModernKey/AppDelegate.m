@@ -10,6 +10,7 @@
 #import <Carbon/Carbon.h>
 #import <Cocoa/Cocoa.h>
 #import <ServiceManagement/ServiceManagement.h>
+#import <objc/runtime.h>
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "OpenKeyManager.h"
@@ -95,7 +96,10 @@ extern bool convertToolDontAlertWhenCompleted;
 -(void)askPermission {
     NSAlert *alert = [[NSAlert alloc] init];
     [alert setMessageText: [NSString stringWithFormat:@"OpenKey cần bạn cấp quyền để có thể hoạt động!"]];
-    [alert setInformativeText:@"Vui lòng chạy lại ứng dụng sau khi cấp quyền."];
+    [alert setInformativeText:@"Sau khi cấp quyền trong System Settings:\n"
+                               "1. Đóng System Settings\n"
+                               "2. Đợi 2-3 giây để hệ thống cập nhật\n"
+                               "3. OpenKey sẽ tự động khởi động"];
 
     [alert addButtonWithTitle:@"Không"];
     [alert addButtonWithTitle:@"Cấp quyền"];
@@ -106,10 +110,92 @@ extern bool convertToolDontAlertWhenCompleted;
     NSModalResponse res = [alert runModal];
 
     if (res == 1001) {
+        // User clicked "Cấp quyền" - Mở System Settings
+        NSLog(@"🔐 User requested to grant permission, opening System Settings...");
         MJAccessibilityOpenPanel();
+        
+        // CRITICAL FIX: Đợi user cấp quyền thay vì terminate ngay
+        // TCC database có thể mất 2-5 giây để sync
+        [self waitForPermissionAndInit];
+    } else {
+        // User clicked "Không" - Thoát luôn
+        NSLog(@"❌ User declined permission request, terminating");
+        [NSApp terminate:0];
     }
+}
 
-    [NSApp terminate:0];
+// FIX: Monitor permission status và auto-init khi được cấp
+- (void)waitForPermissionAndInit {
+    __block int checkCount = 0;
+    const int maxChecks = 15; // Check tối đa 15 lần (15 giây)
+    
+    NSTimer *permissionCheckTimer = [NSTimer scheduledTimerWithTimeInterval:1.0
+                                                                     target:self
+                                                                   selector:@selector(checkPermissionStatus:)
+                                                                   userInfo:@{@"checkCount": @(checkCount), @"maxChecks": @(maxChecks)}
+                                                                    repeats:YES];
+    
+    // Store timer để có thể invalidate sau
+    objc_setAssociatedObject(self, "permissionCheckTimer", permissionCheckTimer, OBJC_ASSOCIATION_RETAIN);
+}
+
+- (void)checkPermissionStatus:(NSTimer *)timer {
+    NSDictionary *info = timer.userInfo;
+    int checkCount = [info[@"checkCount"] intValue];
+    int maxChecks = [info[@"maxChecks"] intValue];
+    
+    checkCount++;
+    
+    if (MJAccessibilityIsEnabled()) {
+        // Permission đã được cấp!
+        NSLog(@"✅ Permission granted after %d seconds, initializing...", checkCount);
+        [timer invalidate];
+        
+        // Init app với retry mechanism
+        vShowIconOnDock = (int)[[NSUserDefaults standardUserDefaults] integerForKey:@"vShowIconOnDock"];
+        if (vShowIconOnDock)
+            [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
+        
+        if (vSwitchKeyStatus & 0x8000)
+            NSBeep();
+        
+        [self createStatusBarMenu];
+        
+        _initRetryCount = 0;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self attemptInitEventTap];
+        });
+        
+    } else if (checkCount >= maxChecks) {
+        // Timeout - user chưa cấp quyền sau 15 giây
+        NSLog(@"⏱️ Permission check timeout after %d seconds", checkCount);
+        [timer invalidate];
+        
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Chưa nhận được quyền"];
+        [alert setInformativeText:@"OpenKey chưa nhận được quyền Accessibility.\n\n"
+                                   "Nếu bạn đã cấp quyền, vui lòng:\n"
+                                   "1. Khởi động lại OpenKey\n"
+                                   "2. Hoặc thử menu '🔧 Sửa lỗi quyền (TCC Reset)'\n\n"
+                                   "App sẽ thoát ngay."];
+        [alert addButtonWithTitle:@"OK"];
+        [alert runModal];
+        
+        [NSApp terminate:0];
+    } else {
+        // Vẫn đang đợi - update timer userInfo
+        NSLog(@"⏳ Waiting for permission... (%d/%d)", checkCount, maxChecks);
+        NSDictionary *newInfo = @{@"checkCount": @(checkCount), @"maxChecks": @(maxChecks)};
+        
+        // Re-schedule timer với count mới
+        [timer invalidate];
+        NSTimer *newTimer = [NSTimer scheduledTimerWithTimeInterval:1.0
+                                                             target:self
+                                                           selector:@selector(checkPermissionStatus:)
+                                                           userInfo:newInfo
+                                                            repeats:YES];
+        objc_setAssociatedObject(self, "permissionCheckTimer", newTimer, OBJC_ASSOCIATION_RETAIN);
+    }
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
