@@ -33,6 +33,16 @@ static vector<string> _chromiumBrowser = {
 	"chrome.exe", "brave.exe", "msedge.exe"
 };
 
+// Qt and Electron apps that don't need empty char fix (causes lag)
+static vector<string> _qtElectronApps = {
+	"NotepadNext.exe", "notepad-next.exe",  // NotepadNext (Qt)
+	"Code.exe", "code.exe",                  // VSCode (Electron)
+	"sublime_text.exe",                      // Sublime Text
+	"atom.exe",                              // Atom (Electron)
+	"discord.exe", "Discord.exe",            // Discord (Electron)
+	"slack.exe", "Slack.exe"                 // Slack (Electron)
+};
+
 extern int vSendKeyStepByStep;
 extern int vUseGrayIcon;
 extern int vShowOnStartUp;
@@ -681,15 +691,23 @@ LRESULT CALLBACK keyboardHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 		} else if (pData->code == vWillProcess || pData->code == vRestore || pData->code == vRestoreAndStartNewSession) { //handle result signal
 			//fix autocomplete
 			if (vFixRecommendBrowser && pData->extCode != 4) {
-				if (vFixChromiumBrowser && 
-					std::find(_chromiumBrowser.begin(), _chromiumBrowser.end(), OpenKeyHelper::getLastAppExecuteName()) != _chromiumBrowser.end()) {
-					SendCombineKey(KEY_LEFT_SHIFT, KEY_LEFT, 0, KEYEVENTF_EXTENDEDKEY);
-					if (pData->backspaceCount == 1)
-						pData->backspaceCount--;
-				} else {
-					SendEmptyCharacter();
-					pData->backspaceCount++;
+				// Check if current app is Qt/Electron based (they don't need empty char and it causes lag)
+				string& currentApp = OpenKeyHelper::getLastAppExecuteName();
+				bool isQtElectronApp = std::find(_qtElectronApps.begin(), _qtElectronApps.end(), currentApp) != _qtElectronApps.end();
+				
+				if (!isQtElectronApp) {
+					// Only apply fix for non-Qt/Electron apps
+					if (vFixChromiumBrowser && 
+						std::find(_chromiumBrowser.begin(), _chromiumBrowser.end(), currentApp) != _chromiumBrowser.end()) {
+						SendCombineKey(KEY_LEFT_SHIFT, KEY_LEFT, 0, KEYEVENTF_EXTENDEDKEY);
+						if (pData->backspaceCount == 1)
+							pData->backspaceCount--;
+					} else {
+						SendEmptyCharacter();
+						pData->backspaceCount++;
+					}
 				}
+				// Qt/Electron apps: skip empty char entirely (prevent lag from Input Context init)
 			}
 			
 			//send backspace
