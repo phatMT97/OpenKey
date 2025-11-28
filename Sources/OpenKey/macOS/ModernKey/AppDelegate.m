@@ -87,6 +87,9 @@ extern bool convertToolDontAlertWhenCompleted;
     NSMenuItem* mnuVietnameseLocaleCP1258;
     
     NSMenuItem* mnuQuickConvert;
+    
+    // FIX 2: Retry counter to avoid TCC desync issues
+    NSInteger _initRetryCount;
 }
 
 -(void)askPermission {
@@ -140,17 +143,10 @@ extern bool convertToolDontAlertWhenCompleted;
 
     [self createStatusBarMenu];
     
-    //init
+    // FIX 2: Init with retry mechanism to handle TCC desync
+    _initRetryCount = 0;
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (![OpenKeyManager initEventTap]) {
-            [self onControlPanelSelected];
-        } else {
-            NSInteger showui = [[NSUserDefaults standardUserDefaults] integerForKey:@"ShowUIOnStartup"];
-            if (showui == 1) {
-                [self onControlPanelSelected];
-            }
-        }
-        [self setQuickConvertString];
+        [self attemptInitEventTap];
     });
     
     //load default config if is first launch
@@ -167,6 +163,76 @@ extern bool convertToolDontAlertWhenCompleted;
     //correct run on startup
     NSInteger val = [[NSUserDefaults standardUserDefaults] integerForKey:@"RunOnStartup"];
     [appDelegate setRunOnStartup:val];
+}
+
+// FIX 2: Retry mechanism to handle TCC desync/lag
+- (void)attemptInitEventTap {
+    if ([OpenKeyManager initEventTap]) {
+        // Success!
+        NSLog(@"✅ Event tap initialized successfully on attempt %ld", (long)(_initRetryCount + 1));
+        _initRetryCount = 0;
+        
+        // Show UI if needed
+        NSInteger showui = [[NSUserDefaults standardUserDefaults] integerForKey:@"ShowUIOnStartup"];
+        if (showui == 1) {
+            [self onControlPanelSelected];
+        }
+        
+        [self setQuickConvertString];
+    } else {
+        // Failed - retry up to 3 times before showing error
+        _initRetryCount++;
+        
+        if (_initRetryCount < 3) {
+            NSLog(@"⚠️ Event tap init failed (attempt %ld/3), retrying in 1 second...", (long)_initRetryCount);
+            
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                [self attemptInitEventTap];
+            });
+        } else {
+            // After 3 retries, check if it's really a permission issue or TCC zombie
+            NSLog(@"❌ Event tap init failed after 3 attempts");
+            
+            if (!MJAccessibilityIsEnabled()) {
+                // Permission not granted - show permission dialog
+                NSLog(@"❌ Permission not granted after retries");
+                [self askPermission];
+            } else {
+                // Permission is OK but init still fails - likely TCC zombie state
+                NSLog(@"❌ Permission granted but event tap init still fails - possible TCC zombie state");
+                [self showTCCResetGuidance];
+            }
+        }
+    }
+}
+
+// FIX 2: Show guidance for TCC zombie state
+- (void)showTCCResetGuidance {
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"OpenKey không thể khởi động dù đã được cấp quyền"];
+    [alert setInformativeText:@"Đây có thể là lỗi của macOS (TCC Database desync).\n\n"
+                               "Vui lòng thử một trong hai cách sau:\n\n"
+                               "Cách 1 (Khuyên dùng):\n"
+                               "1. Mở Terminal\n"
+                               "2. Chạy lệnh: tccutil reset Accessibility org.tuyenmai.OpenKey\n"
+                               "3. Khởi động lại OpenKey và cấp quyền lại\n\n"
+                               "Cách 2:\n"
+                               "Bấm 'Mở System Settings' và tắt/bật lại quyền Accessibility cho OpenKey."];
+    
+    [alert addButtonWithTitle:@"Mở System Settings"];
+    [alert addButtonWithTitle:@"Đóng"];
+    
+    [alert.window makeKeyAndOrderFront:nil];
+    [alert.window setLevel:NSStatusWindowLevel];
+    
+    NSModalResponse res = [alert runModal];
+    
+    if (res == 1000) {
+        // Open System Settings
+        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"]];
+    }
+    
+    [NSApp terminate:0];
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)sender hasVisibleWindows:(BOOL)flag {
@@ -213,6 +279,10 @@ extern bool convertToolDontAlertWhenCompleted;
     [theMenu addItemWithTitle:@"Bảng điều khiển..." action:@selector(onControlPanelSelected) keyEquivalent:@""];
     [theMenu addItemWithTitle:@"Gõ tắt..." action:@selector(onMacroSelected) keyEquivalent:@""];
     [theMenu addItemWithTitle:@"Giới thiệu" action:@selector(onAboutSelected) keyEquivalent:@""];
+    [theMenu addItem:[NSMenuItem separatorItem]];
+    
+    // FIX 5: TCC Reset helper
+    [theMenu addItemWithTitle:@"🔧 Sửa lỗi quyền (TCC Reset)" action:@selector(onResetTCC) keyEquivalent:@""];
     [theMenu addItem:[NSMenuItem separatorItem]];
     
     [theMenu addItemWithTitle:@"Thoát" action:@selector(terminate:) keyEquivalent:@"q"];
@@ -507,6 +577,43 @@ extern bool convertToolDontAlertWhenCompleted;
     [_aboutWC.window setLevel:NSFloatingWindowLevel];
 }
 
+// FIX 5: TCC Reset helper for user self-service
+-(void)onResetTCC {
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"Bạn có muốn reset quyền Accessibility không?"];
+    [alert setInformativeText:@"Lệnh này sẽ reset quyền Accessibility của OpenKey trong TCC Database (macOS permission system).\n\n"
+                               "Sau khi reset, bạn cần:\n"
+                               "1. Khởi động lại OpenKey\n"
+                               "2. Cấp quyền Accessibility lại\n\n"
+                               "Lệnh sẽ chạy: tccutil reset Accessibility org.tuyenmai.OpenKey\n\n"
+                               "Dùng cách này khi OpenKey không hoạt động dù đã cấp quyền (TCC zombie state)."];
+    
+    [alert addButtonWithTitle:@"Reset và Thoát"];
+    [alert addButtonWithTitle:@"Hủy"];
+    
+    [alert.window makeKeyAndOrderFront:nil];
+    [alert.window setLevel:NSStatusWindowLevel];
+    
+    NSModalResponse res = [alert runModal];
+    
+    if (res == 1000) {
+        NSLog(@"🔧 User requested TCC reset, running tccutil...");
+        
+        // Run TCC reset command
+        NSTask *task = [[NSTask alloc] init];
+        [task setLaunchPath:@"/usr/bin/tccutil"];
+        [task setArguments:@[@"reset", @"Accessibility", @"org.tuyenmai.OpenKey"]];
+        
+        [task launch];
+        [task waitUntilExit];
+        
+        NSLog(@"✅ TCC reset completed, exiting app");
+        
+        // Exit app so user can restart and grant permission again
+        [NSApp terminate:0];
+    }
+}
+
 #pragma mark -Short key event
 -(void)onSwitchLanguage {
     [self onInputMethodSelected];
@@ -514,11 +621,24 @@ extern bool convertToolDontAlertWhenCompleted;
 }
 
 #pragma mark Reset OpenKey after mac computer awake
+// FIX 3: Properly restart event tap after wake
 -(void)receiveWakeNote: (NSNotification*)note {
-    [OpenKeyManager initEventTap];
+    NSLog(@"💤 System woke up from sleep, restarting event tap...");
+    
+    // CRITICAL: Must stop first to reset _isInited flag
+    // Otherwise initEventTap will return immediately without actually restarting
+    [OpenKeyManager stopEventTap];
+    
+    // Delay 0.5s to let system stabilize after wake
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        // Reset retry counter and attempt init with retry mechanism
+        _initRetryCount = 0;
+        [self attemptInitEventTap];
+    });
 }
 
 -(void)receiveSleepNote: (NSNotification*)note {
+    NSLog(@"💤 System going to sleep, stopping event tap...");
     [OpenKeyManager stopEventTap];
 }
 

@@ -30,6 +30,11 @@ static CFMachPortRef      eventTap;
 static CGEventMask        eventMask;
 static CFRunLoopSourceRef runLoopSource;
 
+// Getter for eventTap (needed by OpenKey.mm for Fix 1)
+CFMachPortRef getEventTapRef() {
+    return eventTap;
+}
+
 +(BOOL)isInited {
     return _isInited;
 }

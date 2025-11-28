@@ -576,6 +576,26 @@ extern "C" {
      * MAIN Callback.
      */
     CGEventRef OpenKeyCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+        // CRITICAL FIX 1: Handle event tap disabled by system
+        // On macOS Sonoma/Sequoia, if callback takes >5ms or gets blocked,
+        // system sends kCGEventTapDisabledByTimeout and disables the tap.
+        // Without re-enabling, the tap stays dead and app stops working.
+        if (type == kCGEventTapDisabledByUserInput || type == kCGEventTapDisabledByTimeout) {
+            NSLog(@"⚠️ Event tap disabled by system (type: %d), re-enabling immediately...", (int)type);
+            
+            // Re-enable the event tap
+            extern CFMachPortRef getEventTapRef();
+            CFMachPortRef eventTap = getEventTapRef();
+            if (eventTap != NULL) {
+                CGEventTapEnable(eventTap, true);
+                NSLog(@"✅ Event tap re-enabled successfully");
+            } else {
+                NSLog(@"❌ Event tap is NULL, cannot re-enable");
+            }
+            
+            return event;
+        }
+        
         //dont handle my event
         if (CGEventGetIntegerValueField(event, kCGEventSourceStateID) == CGEventSourceGetSourceStateID(myEventSource)) {
             return event;
