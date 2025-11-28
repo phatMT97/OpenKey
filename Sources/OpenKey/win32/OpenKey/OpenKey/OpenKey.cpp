@@ -524,17 +524,73 @@ LRESULT CALLBACK keyboardHookProcess(int nCode, WPARAM wParam, LPARAM lParam) {
 		return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
 	}
 	
-	//check modifier key
+	// CRITICAL: Always update modifier state regardless of language mode
+	// This ensures proper state tracking when switching between EN/VN modes
 	if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-		//LOG(L"Key down: %d\n", keyboardData->vkCode);
 		SetModifierMask((Uint16)keyboardData->vkCode);
 	} else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
-		//LOG(L"Key up: %d\n", keyboardData->vkCode);
 		UnsetModifierMask((Uint16)keyboardData->vkCode);
 	}
 	if (!_isFlagKey && wParam != WM_KEYUP && wParam != WM_SYSKEYUP)
 		_keycode = (Uint16)keyboardData->vkCode;
+	
+	// OPTIMIZATION P1.1 (REVISED): Early exit for English mode
+	// Checked AFTER modifier state update to ensure state consistency
+	if (vLanguage == 0) {
+		// Still need to handle language switch hotkey in English mode
+		if ((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) && !_isFlagKey && _keycode != 0) {
+			if (GET_SWITCH_KEY(vSwitchKeyStatus) == _keycode && 
+				checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) {
+				switchLanguage();
+				_hasJustUsedHotKey = true;
+				_keycode = 0;
+				return -1; // Block key event
+			}
+			// Also handle convert tool hotkey
+			if (GET_SWITCH_KEY(convertToolHotKey) == _keycode && 
+				checkHotKey(convertToolHotKey, GET_SWITCH_KEY(convertToolHotKey) != 0xFE)) {
+				AppDelegate::getInstance()->onQuickConvert();
+				_hasJustUsedHotKey = true;
+				_keycode = 0;
+				return -1; // Block key event
+			}
+		} else if (_isFlagKey) {
+			// Handle flag key combos for hotkeys (e.g., release Ctrl after Ctrl+Shift+Z)
+			if (_lastFlag == 0 || _lastFlag < _flag)
+				_lastFlag = _flag;
+			else if (_lastFlag > _flag) {
+				// Check switch on flag key release
+				if (checkHotKey(vSwitchKeyStatus, GET_SWITCH_KEY(vSwitchKeyStatus) != 0xFE)) {
+					switchLanguage();
+					_hasJustUsedHotKey = true;
+				}
+				if (checkHotKey(convertToolHotKey, GET_SWITCH_KEY(convertToolHotKey) != 0xFE)) {
+					AppDelegate::getInstance()->onQuickConvert();
+					_hasJustUsedHotKey = true;
+				}
+				_lastFlag = _flag;
+				_hasJustUsedHotKey = false;
+			}
+			_keycode = 0;
+			return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+		}
+		
+		// Handle macro in English mode if enabled
+		if (vUseMacro && vUseMacroInEnglishMode && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
+			vEnglishMode(((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) ? vKeyEventState::KeyDown : vKeyEventState::MouseDown),
+				_keycode,
+				(_flag & MASK_SHIFT) || (_flag & MASK_CAPITAL),
+				OTHER_CONTROL_KEY);
 
+			if (pData->code == vReplaceMaro) { //handle macro in english mode
+				handleMacro();
+				return NULL;
+			}
+		}
+		return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+	}
+	
+	// Vietnamese mode processing (only when vLanguage != 0)
 	//switch language shortcut; convert hotkey
 	if ((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) && !_isFlagKey && _keycode != 0) {
 		if (GET_SWITCH_KEY(vSwitchKeyStatus) != _keycode && GET_SWITCH_KEY(convertToolHotKey) != _keycode) {

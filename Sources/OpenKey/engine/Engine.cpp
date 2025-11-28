@@ -1345,6 +1345,28 @@ void vKeyHandleEvent(const vKeyEvent& event,
                      const Uint16& data,
                      const Uint8& capsStatus,
                      const bool& otherControlKey) {
+    // OPTIMIZATION P1.2: Early exit for control key combinations
+    // Skip Vietnamese processing for Ctrl+X, Alt+Tab, etc.
+    // Exception: Allow if vTempOffOpenKey is enabled (user may use Alt for temp disable)
+    // Exception: Continue processing if it's a potential macro trigger in English mode (handled in vEnglishMode)
+    if (otherControlKey && !vTempOffOpenKey) {
+        hCode = vDoNothing;
+        hBPC = 0;
+        hNCC = 0;
+        hExt = 1; //word break
+        
+        // Clear macro key buffer if using macro
+        if (vUseMacro) {
+            hMacroKey.clear();
+        }
+        
+        // Reset state and exit early
+        startNewSession();
+        vCheckSpelling = _useSpellCheckingBefore;
+        _willTempOffEngine = false;
+        return;
+    }
+    
     _isCaps = (capsStatus == 1 || //shift
                capsStatus == 2); //caps lock
     if ((IS_NUMBER_KEY(data) && capsStatus == 1)
