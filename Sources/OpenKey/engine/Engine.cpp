@@ -174,6 +174,14 @@ void* vKeyInit() {
     // P2.1: Initialize lookup tables for O(1) performance
     initLookupTables();
     
+    // FIX: Pre-initialize keyCodeToChar map to eliminate lazy init in critical path
+    // While impact is minimal (~0.05ms), this ensures deterministic latency
+    static bool isMapInitialized = false;
+    if (!isMapInitialized || _keyCodeToChar.size() == 0) {
+        initKeyCodeToChar();
+        isMapInitialized = true;
+    }
+    
     return &HookState;
 }
 

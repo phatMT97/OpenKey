@@ -565,9 +565,7 @@ void initKeyCodeToChar() {
 }
 
 Uint16 keyCodeToCharacter(const Uint32& keyCode) {
-    if (_keyCodeToChar.size() == 0) { //init data if it is empty
-        initKeyCodeToChar();
-    }
+    // Map is pre-initialized in vKeyInit(), no need for lazy check
     if (_keyCodeToChar.find(keyCode) != _keyCodeToChar.end()) {
         return _keyCodeToChar[keyCode];
     }
