@@ -160,6 +160,7 @@ extern bool convertToolDontAlertWhenCompleted;
             NSBeep();
         
         [self createStatusBarMenu];
+        [self setQuickConvertString]; // FIX: Ensure hotkey is shown in menu
         
         _initRetryCount = 0;
         dispatch_async(dispatch_get_main_queue(), ^{
