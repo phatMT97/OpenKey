@@ -108,6 +108,70 @@ OpenKey là bộ gõ tiếng Việt hiện đại, mã nguồn mở với nhiề
    open /Applications/OpenKey.app
    ```
 
+#### 🔧 Sửa lỗi quyền (TCC Reset) - macOS
+
+Nếu gặp lỗi OpenKey liên tục hỏi quyền Accessibility hoặc không hoạt động dù đã cấp quyền, hãy thử các cách sau:
+
+**Phương án 1: Dùng Menu Tích Hợp (Khuyên dùng)**
+
+1. Mở OpenKey (nếu đang chạy)
+2. Click vào icon OpenKey trên status bar
+3. Chọn **"🔧 Sửa lỗi quyền (TCC Reset)"**
+4. Click **"Reset và Thoát"**
+5. Launch lại OpenKey và cấp quyền
+
+**Phương án 2: Dùng Terminal**
+
+> ⚠️ **Bắt buộc**: Phải kéo `OpenKey.app` vào thư mục `/Applications` trước khi reset. Không chạy từ Downloads hoặc Desktop!
+
+```bash
+# 1. Thoát OpenKey
+killall OpenKey
+
+# 2. Reset quyền TCC
+tccutil reset Accessibility org.tuyenmai.OpenKey
+
+# 3. Mở lại OpenKey
+open /Applications/OpenKey.app
+
+# 4. Cấp quyền và đợi 2-5 giây (app sẽ tự động khởi động)
+```
+
+**Lưu ý quan trọng**:
+- ✅ Đợi 2-5 giây sau khi cấp quyền (app tự động khởi động, không cần launch lại)
+- ✅ Phải chạy từ `/Applications`, không chạy từ Downloads/Desktop
+- ❌ **KHÔNG** cần restart máy
+
+**Phương án 3: Dùng System Settings (GUI)**
+
+1. Mở  → System Settings → Privacy & Security → Accessibility
+2. Tìm OpenKey trong danh sách
+3. Click nút **"-"** (minus) để xóa OpenKey
+4. Thoát OpenKey: `killall OpenKey`
+5. Launch lại OpenKey và cấp quyền
+
+**Troubleshooting**:
+
+- **Vấn đề**: Lệnh `tccutil reset` báo lỗi
+  - **Fix**: Dùng Phương án 3 (GUI) thay vì Terminal
+
+- **Vấn đề**: Reset xong nhưng vẫn lỗi
+  - **Nguyên nhân**: App bị Translocation (chạy từ Downloads)
+  - **Fix**: 
+    ```bash
+    # Xóa quarantine attribute
+    xattr -cr /Applications/OpenKey.app
+    
+    # Reset lại quyền
+    tccutil reset Accessibility org.tuyenmai.OpenKey
+    
+    # Launch từ /Applications
+    open /Applications/OpenKey.app
+    ```
+
+- **Vấn đề**: Sau khi cấp quyền vẫn không hoạt động
+  - **Fix**: Đợi 5 giây - App sẽ tự động khởi động (không cần launch lại)
+
 ---
 
 ## 🤝 Đóng góp
