@@ -113,6 +113,12 @@ void ReinstallHooks() {
 	// Small delay to ensure hooks are fully released
 	Sleep(100);
 	
+	// CRITICAL: Reset state variables to fix hotkey detection
+	_lastFlag = 0;
+	_keycode = 0;
+	_hasJustUsedHotKey = false;
+	OutputDebugString(_T("OpenKey: ReinstallHooks - State variables reset\n"));
+	
 	// Reinstall hooks
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardHookProcess, hInstance, 0);
