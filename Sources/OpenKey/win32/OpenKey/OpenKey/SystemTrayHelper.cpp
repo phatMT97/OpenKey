@@ -15,11 +15,10 @@ redistribute your new version, it MUST be open source.
 #include "AppDelegate.h"
 #include "OpenKeyManager.h"
 #include <Wtsapi32.h>
-#include <thread>
-#include <atomic>
-#include <memory>
 
 #pragma comment(lib, "Wtsapi32.lib")
+
+#define TIMER_REINSTALL_HOOKS 1001
 
 #define WM_TRAYMESSAGE (WM_USER + 1)
 #define TRAY_ICONUID 100
@@ -48,7 +47,6 @@ redistribute your new version, it MUST be open source.
 #define POPUP_CONTROL_PANEL 1000
 #define POPUP_ABOUT_OPENKEY 1010
 #define POPUP_OPENKEY_EXIT 2000
-#define WM_REINSTALL_HOOKS (WM_USER + 1000)
 
 #define MODIFY_MENU(MENU, COMMAND, DATA) ModifyMenu(MENU, COMMAND, \
 											MF_BYCOMMAND | (DATA ? MF_CHECKED : MF_UNCHECKED), \
@@ -61,7 +59,6 @@ static HMENU otherCode;
 
 static NOTIFYICONDATA nid;
 static ULONGLONG lastUnlockTime = 0;
-static std::shared_ptr<std::atomic<bool>> appRunning = std::make_shared<std::atomic<bool>>(true);
 
 #define SESSION_UNLOCK_DEBOUNCE_MS 2000
 
@@ -116,32 +113,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				lastUnlockTime = now;
 				OutputDebugString(_T("OpenKey: Session unlocked. Scheduling hook reinstall...\n"));
 				
-				// Post message to reinstall hooks (avoid blocking WndProc)
-				PostMessage(hWnd, WM_REINSTALL_HOOKS, 0, 0);
+				// Use timer to delay 500ms, then reinstall from main thread
+				SetTimer(hWnd, TIMER_REINSTALL_HOOKS, 500, NULL);
 			}
 		}
 		break;
 		
-	// Custom message to reinstall hooks
-	case WM_REINSTALL_HOOKS:
-		{
-			// Capture app lifetime flag
-			auto running = appRunning;
+	// Handle timer for hook reinstallation
+	case WM_TIMER:
+		if (wParam == TIMER_REINSTALL_HOOKS) {
+			KillTimer(hWnd, TIMER_REINSTALL_HOOKS);
 			
-			// Run async to delay and not block UI
-			std::thread([running]() {
-				// CRITICAL: Delay 500ms for desktop to stabilize
-				Sleep(500);
-				
-				// Check if app is still running before reinstalling
-				if (running->load()) {
-					// Reinstall hooks
-					OpenKeyManager::reinstallHooks();
-					OutputDebugString(_T("OpenKey: Hooks reinstalled after unlock\n"));
-				} else {
-					OutputDebugString(_T("OpenKey: Skipped hook reinstall - app is shutting down\n"));
-				}
-			}).detach();
+			// CRITICAL: Called from main thread (has message loop)
+			OutputDebugString(_T("OpenKey: Reinstalling hooks from main thread...\n"));
+			OpenKeyManager::reinstallHooks();
 		}
 		break;
 	case WM_TRAYMESSAGE: {
@@ -229,8 +214,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	break;
 	
 	case WM_DESTROY:
-		// Signal app is shutting down to prevent detached threads from crashing
-		appRunning->store(false);
+		// Kill timer if still active
+		KillTimer(hWnd, TIMER_REINSTALL_HOOKS);
 		
 		// Unregister session notification on destroy
 		WTSUnRegisterSessionNotification(hWnd);
