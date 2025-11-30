@@ -113,11 +113,23 @@ void ReinstallHooks() {
 	// Small delay to ensure hooks are fully released
 	Sleep(100);
 	
-	// CRITICAL: Reset state variables to fix hotkey detection
+	// CRITICAL: Resync keyboard state (like OpenKeyInit does)
+	// Reset flags first
 	_lastFlag = 0;
 	_keycode = 0;
 	_hasJustUsedHotKey = false;
-	OutputDebugString(_T("OpenKey: ReinstallHooks - State variables reset\n"));
+	
+	// Resync _flag with current keyboard state
+	_flag = 0;
+	if (GetKeyState(VK_LSHIFT) < 0 || GetKeyState(VK_RSHIFT) < 0) _flag |= MASK_SHIFT;
+	if (GetKeyState(VK_LCONTROL) < 0 || GetKeyState(VK_RCONTROL) < 0) _flag |= MASK_CONTROL;
+	if (GetKeyState(VK_LMENU) < 0 || GetKeyState(VK_RMENU) < 0) _flag |= MASK_ALT;
+	if (GetKeyState(VK_LWIN) < 0 || GetKeyState(VK_RWIN) < 0) _flag |= MASK_WIN;
+	if (GetKeyState(VK_NUMLOCK) < 0) _flag |= MASK_NUMLOCK;
+	if (GetKeyState(VK_CAPITAL) == 1) _flag |= MASK_CAPITAL;
+	if (GetKeyState(VK_SCROLL) < 0) _flag |= MASK_SCROLL;
+	
+	OutputDebugString(_T("OpenKey: ReinstallHooks - State variables reset and resynced\n"));
 	
 	// Reinstall hooks
 	HINSTANCE hInstance = GetModuleHandle(NULL);
