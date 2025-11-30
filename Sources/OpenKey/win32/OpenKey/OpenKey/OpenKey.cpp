@@ -13,6 +13,7 @@ redistribute your new version, it MUST be open source.
 -----------------------------------------------------------*/
 #include "stdafx.h"
 #include "AppDelegate.h"
+#include <mutex>
 
 #pragma comment(lib, "imm32")
 #define IMC_GETOPENSTATUS 0x0005
@@ -85,6 +86,49 @@ void OpenKeyFree() {
 	UnhookWindowsHookEx(hMouseHook);
 	UnhookWindowsHookEx(hKeyboardHook);
 	UnhookWinEvent(hSystemEvent);
+}
+
+void ReinstallHooks() {
+	// Thread-safe: Use static mutex to avoid concurrent reinstalls
+	static std::mutex reinstallMutex;
+	std::lock_guard<std::mutex> lock(reinstallMutex);
+	
+	OutputDebugString(_T("OpenKey: ReinstallHooks - Starting...\n"));
+	
+	// Unhook old hooks (if still active)
+	if (hKeyboardHook) {
+		if (UnhookWindowsHookEx(hKeyboardHook)) {
+			OutputDebugString(_T("OpenKey: ReinstallHooks - Keyboard hook unhooked\n"));
+		}
+		hKeyboardHook = NULL;
+	}
+	
+	if (hMouseHook) {
+		if (UnhookWindowsHookEx(hMouseHook)) {
+			OutputDebugString(_T("OpenKey: ReinstallHooks - Mouse hook unhooked\n"));
+		}
+		hMouseHook = NULL;
+	}
+	
+	// Small delay to ensure hooks are fully released
+	Sleep(100);
+	
+	// Reinstall hooks
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+	hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboardHookProcess, hInstance, 0);
+	hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, mouseHookProcess, hInstance, 0);
+	
+	if (hKeyboardHook && hMouseHook) {
+		OutputDebugString(_T("OpenKey: ReinstallHooks - Success!\n"));
+	} else {
+		OutputDebugString(_T("OpenKey: ReinstallHooks - FAILED!\n"));
+		if (!hKeyboardHook) {
+			OutputDebugString(_T("OpenKey: ReinstallHooks - Keyboard hook failed\n"));
+		}
+		if (!hMouseHook) {
+			OutputDebugString(_T("OpenKey: ReinstallHooks - Mouse hook failed\n"));
+		}
+	}
 }
 
 void OpenKeyInit() {
