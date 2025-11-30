@@ -26,6 +26,11 @@ Phiên bản này đã được tối ưu sâu để hoạt động mượt mà,
 
 > 👉 Xem chi tiết kỹ thuật tại [OPTIMIZATION_DETAILS.md](OPTIMIZATION_DETAILS.md)
 
+### 4. 🔓 Sửa lỗi phím tắt sau khi Lock/Unlock Windows
+Khắc phục hoàn toàn lỗi phím tắt chuyển Anh-Việt không hoạt động sau khi khóa màn hình (Win+L) và đăng nhập lại:
+
+> 👉 Xem chi tiết kỹ thuật tại [LOCK_SCREEN_FIX.md](LOCK_SCREEN_FIX.md)
+
 
 
 ---
