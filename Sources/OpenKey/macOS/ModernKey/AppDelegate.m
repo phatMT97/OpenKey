@@ -172,17 +172,19 @@ extern bool convertToolDontAlertWhenCompleted;
         NSLog(@"⏱️ Permission check timeout after %d seconds", checkCount);
         [timer invalidate];
         
+        // CRITICAL FIX: KHÔNG terminate app, để user có thể dùng menu TCC Reset
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setMessageText:@"Chưa nhận được quyền"];
         [alert setInformativeText:@"OpenKey chưa nhận được quyền Accessibility.\n\n"
                                    "Nếu bạn đã cấp quyền, vui lòng:\n"
                                    "1. Khởi động lại OpenKey\n"
                                    "2. Hoặc thử menu '🔧 Sửa lỗi quyền (TCC Reset)'\n\n"
-                                   "App sẽ thoát ngay."];
+                                   "App sẽ KHÔNG thoát để bạn có thể dùng menu."];
         [alert addButtonWithTitle:@"OK"];
         [alert runModal];
         
-        [NSApp terminate:0];
+        // KHÔNG terminate - để user có thể access menu!
+        // [NSApp terminate:0];
     } else {
         // Vẫn đang đợi - update timer userInfo
         NSLog(@"⏳ Waiting for permission... (%d/%d)", checkCount, maxChecks);
@@ -689,7 +691,7 @@ extern bool convertToolDontAlertWhenCompleted;
         // Run TCC reset command
         NSTask *task = [[NSTask alloc] init];
         [task setLaunchPath:@"/usr/bin/tccutil"];
-        [task setArguments:@[@"reset", @"Accessibility", @"org.tuyenmai.OpenKey"]];
+        [task setArguments:@[@"reset", @"Accessibility", @"com.tuyenmai.openkey"]];
         
         [task launch];
         [task waitUntilExit];
