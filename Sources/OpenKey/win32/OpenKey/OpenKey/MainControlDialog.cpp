@@ -13,6 +13,7 @@ redistribute your new version, it MUST be open source.
 -----------------------------------------------------------*/
 #include "MainControlDialog.h"
 #include "AppDelegate.h"
+#include "OpenKeySettingsController.h"
 #include <Shlobj.h>
 #include <Uxtheme.h>
 
@@ -333,249 +334,282 @@ INT_PTR MainControlDialog::tabPageEventProc(HWND hDlg, UINT uMsg, WPARAM wParam,
 }
 
 void MainControlDialog::fillData() {
-    SendMessage(comboBoxInputType, CB_SETCURSEL, vInputType, 0);
-    SendMessage(comboBoxTableCode, CB_SETCURSEL, vCodeTable, 0);
+    auto& controller = OpenKeySettingsController::getInstance();
+    
+    // Comboboxes
+    SendMessage(comboBoxInputType, CB_SETCURSEL, controller.getInputType(), 0);
+    SendMessage(comboBoxTableCode, CB_SETCURSEL, controller.getCodeTable(), 0);
 
-    SendMessage(checkCtrl, BM_SETCHECK, HAS_CONTROL(vSwitchKeyStatus) ? 1 : 0, 0);
-    SendMessage(checkAlt, BM_SETCHECK, HAS_OPTION(vSwitchKeyStatus) ? 1 : 0, 0);
-    SendMessage(checkWin, BM_SETCHECK, HAS_COMMAND(vSwitchKeyStatus) ? 1 : 0, 0);
-    SendMessage(checkShift, BM_SETCHECK, HAS_SHIFT(vSwitchKeyStatus) ? 1 : 0, 0);
-    setSwitchKeyText(textSwitchKey, (vSwitchKeyStatus >> 24) & 0xFF);
-    SendMessage(checkBeep, BM_SETCHECK, HAS_BEEP(vSwitchKeyStatus) ? 1 : 0, 0);
+    // Switch Key Status (bit-packed value)
+    int switchKeyStatus = controller.getSwitchKeyStatus();
+    SendMessage(checkCtrl, BM_SETCHECK, HAS_CONTROL(switchKeyStatus) ? 1 : 0, 0);
+    SendMessage(checkAlt, BM_SETCHECK, HAS_OPTION(switchKeyStatus) ? 1 : 0, 0);
+    SendMessage(checkWin, BM_SETCHECK, HAS_COMMAND(switchKeyStatus) ? 1 : 0, 0);
+    SendMessage(checkShift, BM_SETCHECK, HAS_SHIFT(switchKeyStatus) ? 1 : 0, 0);
+    setSwitchKeyText(textSwitchKey, (switchKeyStatus >> 24) & 0xFF);
+    SendMessage(checkBeep, BM_SETCHECK, HAS_BEEP(switchKeyStatus) ? 1 : 0, 0);
 
-    SendMessage(checkVietnamese, BM_SETCHECK, vLanguage, 0);
-    SendMessage(checkEnglish, BM_SETCHECK, !vLanguage, 0);
+    // Language Selection
+    int lang = controller.getLanguage();
+    SendMessage(checkVietnamese, BM_SETCHECK, lang, 0);
+    SendMessage(checkEnglish, BM_SETCHECK, !lang, 0);
 
-    SendMessage(checkModernOrthorgraphy, BM_SETCHECK, vUseModernOrthography ? 1 : 0, 0);
-    SendMessage(checkFixRecommendBrowser, BM_SETCHECK, vFixRecommendBrowser ? 1 : 0, 0);
-    SendMessage(checkShowOnStartup, BM_SETCHECK, vShowOnStartUp ? 1 : 0, 0);
-    SendMessage(checkRunWithWindows, BM_SETCHECK, vRunWithWindows ? 1 : 0, 0);
-    SendMessage(checkSpelling, BM_SETCHECK, vCheckSpelling ? 1 : 0, 0);
-    SendMessage(checkRestoreIfWrongSpelling, BM_SETCHECK, vRestoreIfWrongSpelling ? 1 : 0, 0);
-    SendMessage(checkModernIcon, BM_SETCHECK, vUseGrayIcon ? 1 : 0, 0);
-    SendMessage(checkAllowZWJF, BM_SETCHECK, vAllowConsonantZFWJ ? 1 : 0, 0);
-    SendMessage(checkTempOffSpelling, BM_SETCHECK, vTempOffSpelling ? 1 : 0, 0);
-    SendMessage(checkQuickStartConsonant, BM_SETCHECK, vQuickStartConsonant ? 1 : 0, 0);
-    SendMessage(checkQuickEndConsonant, BM_SETCHECK, vQuickEndConsonant ? 1 : 0, 0);
-    SendMessage(checkRememberTableCode, BM_SETCHECK, vRememberCode ? 1 : 0, 0);
-    SendMessage(checkAllowOtherLanguages, BM_SETCHECK, vOtherLanguage ? 1 : 0, 0);
-    SendMessage(checkTempOffOpenKey, BM_SETCHECK, vTempOffOpenKey ? 1 : 0, 0);
+    // Core Settings
+    SendMessage(checkModernOrthorgraphy, BM_SETCHECK, controller.getUseModernOrthography() ? 1 : 0, 0);
+    SendMessage(checkFixRecommendBrowser, BM_SETCHECK, controller.getFixRecommendBrowser() ? 1 : 0, 0);
+    SendMessage(checkShowOnStartup, BM_SETCHECK, controller.getShowOnStartUp() ? 1 : 0, 0);
+    SendMessage(checkRunWithWindows, BM_SETCHECK, controller.getRunWithWindows() ? 1 : 0, 0);
+    SendMessage(checkSpelling, BM_SETCHECK, controller.getCheckSpelling() ? 1 : 0, 0);
+    SendMessage(checkRestoreIfWrongSpelling, BM_SETCHECK, controller.getRestoreIfWrongSpelling() ? 1 : 0, 0);
+    SendMessage(checkModernIcon, BM_SETCHECK, controller.getUseGrayIcon() ? 1 : 0, 0);
+    SendMessage(checkAllowZWJF, BM_SETCHECK, controller.getAllowConsonantZFWJ() ? 1 : 0, 0);
+    SendMessage(checkTempOffSpelling, BM_SETCHECK, controller.getTempOffSpelling() ? 1 : 0, 0);
+    SendMessage(checkQuickStartConsonant, BM_SETCHECK, controller.getQuickStartConsonant() ? 1 : 0, 0);
+    SendMessage(checkQuickEndConsonant, BM_SETCHECK, controller.getQuickEndConsonant() ? 1 : 0, 0);
+    SendMessage(checkRememberTableCode, BM_SETCHECK, controller.getRememberCode() ? 1 : 0, 0);
+    SendMessage(checkAllowOtherLanguages, BM_SETCHECK, controller.getOtherLanguage() ? 1 : 0, 0);
+    SendMessage(checkTempOffOpenKey, BM_SETCHECK, controller.getTempOffOpenKey() ? 1 : 0, 0);
 
-    SendMessage(checkSmartSwitchKey, BM_SETCHECK, vUseSmartSwitchKey ? 1 : 0, 0);
-    SendMessage(checkCapsFirstChar, BM_SETCHECK, vUpperCaseFirstChar ? 1 : 0, 0);
-    SendMessage(checkQuickTelex, BM_SETCHECK, vQuickTelex ? 1 : 0, 0);
-    SendMessage(checkUseMacro, BM_SETCHECK, vUseMacro ? 1 : 0, 0);
-    SendMessage(checkUseMacroInEnglish, BM_SETCHECK, vUseMacroInEnglishMode ? 1 : 0, 0);
+    // Smart Features
+    SendMessage(checkSmartSwitchKey, BM_SETCHECK, controller.getUseSmartSwitchKey() ? 1 : 0, 0);
+    SendMessage(checkCapsFirstChar, BM_SETCHECK, controller.getUpperCaseFirstChar() ? 1 : 0, 0);
+    SendMessage(checkQuickTelex, BM_SETCHECK, controller.getQuickTelex() ? 1 : 0, 0);
+    SendMessage(checkUseMacro, BM_SETCHECK, controller.getUseMacro() ? 1 : 0, 0);
+    SendMessage(checkUseMacroInEnglish, BM_SETCHECK, controller.getUseMacroInEnglishMode() ? 1 : 0, 0);
 
-    SendMessage(checkMacroAutoCaps, BM_SETCHECK, vAutoCapsMacro ? 1 : 0, 0);
-    SendMessage(checkSupportMetroApp, BM_SETCHECK, vSupportMetroApp ? 1 : 0, 0);
-    SendMessage(checkCreateDesktopShortcut, BM_SETCHECK, vCreateDesktopShortcut ? 1 : 0, 0);
-    SendMessage(checkRunAsAdmin, BM_SETCHECK, vRunAsAdmin ? 1 : 0, 0);
-    SendMessage(checkCheckNewVersion, BM_SETCHECK, vCheckNewVersion ? 1 : 0, 0);
-    SendMessage(checkUseClipboard, BM_SETCHECK, vSendKeyStepByStep ? 0 : 1, 0);
-    SendMessage(checkFixChromium, BM_SETCHECK, vFixChromiumBrowser ? 1 : 0, 0);
-    SendMessage(checkExcludeApps, BM_SETCHECK, vExcludeApps ? 1 : 0, 0);
+    // System & Advanced
+    SendMessage(checkMacroAutoCaps, BM_SETCHECK, controller.getAutoCapsMacro() ? 1 : 0, 0);
+    SendMessage(checkSupportMetroApp, BM_SETCHECK, controller.getSupportMetroApp() ? 1 : 0, 0);
+    SendMessage(checkCreateDesktopShortcut, BM_SETCHECK, controller.getCreateDesktopShortcut() ? 1 : 0, 0);
+    SendMessage(checkRunAsAdmin, BM_SETCHECK, controller.getRunAsAdmin() ? 1 : 0, 0);
+    SendMessage(checkCheckNewVersion, BM_SETCHECK, controller.getCheckNewVersion() ? 1 : 0, 0);
+    SendMessage(checkUseClipboard, BM_SETCHECK, controller.getSendKeyStepByStep() ? 0 : 1, 0); // Inverted logic
+    SendMessage(checkFixChromium, BM_SETCHECK, controller.getFixChromiumBrowser() ? 1 : 0, 0);
+    SendMessage(checkExcludeApps, BM_SETCHECK, controller.getExcludeApps() ? 1 : 0, 0);
 
-    EnableWindow(checkRestoreIfWrongSpelling, vCheckSpelling);
-    EnableWindow(checkAllowZWJF, vCheckSpelling);
-    EnableWindow(checkTempOffSpelling, vCheckSpelling);
-    EnableWindow(checkFixChromium, vFixRecommendBrowser);
+    // UI Dependencies (Enable/Disable controls based on settings)
+    bool spellingEnabled = controller.getCheckSpelling();
+    EnableWindow(checkRestoreIfWrongSpelling, spellingEnabled);
+    EnableWindow(checkAllowZWJF, spellingEnabled);
+    EnableWindow(checkTempOffSpelling, spellingEnabled);
+    
+    bool browserFixEnabled = controller.getFixRecommendBrowser();
+    EnableWindow(checkFixChromium, browserFixEnabled);
 
-    //tab info
+    // Tab Info (UI-only, no controller needed)
     wchar_t buffer[256];
     wsprintfW(buffer, _T("Phiên bản %s cho Windows - Ngày cập nhật: %s"), OpenKeyHelper::getVersionString().c_str(), _T(__DATE__));
     SendDlgItemMessage(hTabPage4, IDC_STATIC_APP_VERSION_INFO, WM_SETTEXT, 0, LPARAM(buffer));
 }
 
 void MainControlDialog::setSwitchKey(const unsigned short& code) {
-    vSwitchKeyStatus &= 0xFFFFFF00;
-    vSwitchKeyStatus |= code;
-    vSwitchKeyStatus &= 0x00FFFFFF;
-    vSwitchKeyStatus |= ((unsigned int)code << 24);
-    APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+    int status = OpenKeySettingsController::getInstance().getSwitchKeyStatus();
+    status &= 0xFFFFFF00;
+    status |= code;
+    status &= 0x00FFFFFF;
+    status |= ((unsigned int)code << 24);
+    OpenKeySettingsController::getInstance().setSwitchKeyStatus(status);
 }
 
 void MainControlDialog::onComboBoxSelected(const HWND& hCombobox, const int& comboboxId) {
     if (hCombobox == comboBoxInputType) {
-        APP_SET_DATA(vInputType, (int)SendMessage(hCombobox, CB_GETCURSEL, 0, 0));
+        OpenKeySettingsController::getInstance().setInputType((int)SendMessage(hCombobox, CB_GETCURSEL, 0, 0));
     }
     else if (hCombobox == comboBoxTableCode) {
-        APP_SET_DATA(vCodeTable, (int)SendMessage(hCombobox, CB_GETCURSEL, 0, 0));
-        if (vRememberCode) {
-            setAppInputMethodStatus(OpenKeyHelper::getFrontMostAppExecuteName(), vLanguage | (vCodeTable << 1));
-            saveSmartSwitchKeyData();
-        }
+        OpenKeySettingsController::getInstance().setCodeTable((int)SendMessage(hCombobox, CB_GETCURSEL, 0, 0));
+        // Smart Switch Key logic is now handled inside setCodeTable()
     }
-    SystemTrayHelper::updateData();
+    // SystemTrayHelper::updateData() is called inside controller setters
 }
 
 void MainControlDialog::onCheckboxClicked(const HWND& hWnd) {
     int val = 0;
+    auto& controller = OpenKeySettingsController::getInstance();
+    
+    // Switch Key Modifiers (bit manipulation handled by controller)
     if (hWnd == checkCtrl) {
         val = (int)SendMessage(checkCtrl, BM_GETCHECK, 0, 0);
-        vSwitchKeyStatus &= (~0x100);
-        vSwitchKeyStatus |= val << 8;
-        APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+        int status = controller.getSwitchKeyStatus();
+        status &= (~0x100);
+        status |= val << 8;
+        controller.setSwitchKeyStatus(status);
     }
     else if (hWnd == checkAlt) {
         val = (int)SendMessage(checkAlt, BM_GETCHECK, 0, 0);
-        vSwitchKeyStatus &= (~0x200);
-        vSwitchKeyStatus |= val << 9;
-        APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+        int status = controller.getSwitchKeyStatus();
+        status &= (~0x200);
+        status |= val << 9;
+        controller.setSwitchKeyStatus(status);
     }
     else if (hWnd == checkWin) {
         val = (int)SendMessage(checkWin, BM_GETCHECK, 0, 0);
-        vSwitchKeyStatus &= (~0x400);
-        vSwitchKeyStatus |= val << 10;
-        APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+        int status = controller.getSwitchKeyStatus();
+        status &= (~0x400);
+        status |= val << 10;
+        controller.setSwitchKeyStatus(status);
     }
     else if (hWnd == checkShift) {
         val = (int)SendMessage(checkShift, BM_GETCHECK, 0, 0);
-        vSwitchKeyStatus &= (~0x800);
-        vSwitchKeyStatus |= val << 11;
-        APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+        int status = controller.getSwitchKeyStatus();
+        status &= (~0x800);
+        status |= val << 11;
+        controller.setSwitchKeyStatus(status);
     }
     else if (hWnd == checkBeep) {
         val = (int)SendMessage(checkBeep, BM_GETCHECK, 0, 0);
-        vSwitchKeyStatus &= (~0x8000);
-        vSwitchKeyStatus |= val << 15;
-        APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+        int status = controller.getSwitchKeyStatus();
+        status &= (~0x8000);
+        status |= val << 15;
+        controller.setSwitchKeyStatus(status);
     }
+    // Language Selection (Smart Switch Key logic is in controller)
     else if (hWnd == checkVietnamese) {
         val = (int)SendMessage(checkVietnamese, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vLanguage, val ? 1 : 0);
-        if (vUseSmartSwitchKey) {
-            setAppInputMethodStatus(OpenKeyHelper::getFrontMostAppExecuteName(), vLanguage | (vCodeTable << 1));
-            saveSmartSwitchKeyData();
-        }
+        controller.setLanguage(val ? 1 : 0);
+        // Smart Switch Key logic is now inside setLanguage()
     }
     else if (hWnd == checkEnglish) {
         val = (int)SendMessage(checkVietnamese, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vLanguage, val ? 1 : 0);
-        if (vUseSmartSwitchKey) {
-            setAppInputMethodStatus(OpenKeyHelper::getFrontMostAppExecuteName(), vLanguage | (vCodeTable << 1));
-            saveSmartSwitchKeyData();
-        }
+        controller.setLanguage(val ? 1 : 0);
+        // Smart Switch Key logic is now inside setLanguage()
     }
+    // Core Settings
     else if (hWnd == checkModernOrthorgraphy) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUseModernOrthography, val ? 1 : 0);
+        controller.setUseModernOrthography(val ? true : false);
     }
     else if (hWnd == checkFixRecommendBrowser) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vFixRecommendBrowser, val ? 1 : 0);
-        EnableWindow(checkFixChromium, vFixRecommendBrowser);
+        bool enabled = val ? true : false;
+        controller.setFixRecommendBrowser(enabled);
+        EnableWindow(checkFixChromium, enabled); // UI dependency remains here
     }
     else if (hWnd == checkShowOnStartup) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vShowOnStartUp, val ? 1 : 0);
+        controller.setShowOnStartUp(val ? true : false);
     }
+    // System Operations
     else if (hWnd == checkRunWithWindows) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vRunWithWindows, val ? 1 : 0);
-        OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
+        controller.setRunWithWindows(val ? true : false);
+        // registerRunOnStartup() is now inside setRunWithWindows()
     }
     else if (hWnd == checkSpelling) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vCheckSpelling, val ? 1 : 0);
-        vSetCheckSpelling();
-        EnableWindow(checkRestoreIfWrongSpelling, vCheckSpelling);
-        EnableWindow(checkAllowZWJF, vCheckSpelling);
-        EnableWindow(checkTempOffSpelling, vCheckSpelling);
+        bool enabled = val ? true : false;
+        controller.setCheckSpelling(enabled);
+        // vSetCheckSpelling() is now inside setCheckSpelling()
+        // UI dependencies remain here
+        EnableWindow(checkRestoreIfWrongSpelling, enabled);
+        EnableWindow(checkAllowZWJF, enabled);
+        EnableWindow(checkTempOffSpelling, enabled);
     }
     else if (hWnd == checkRestoreIfWrongSpelling) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vRestoreIfWrongSpelling, val ? 1 : 0);
+        controller.setRestoreIfWrongSpelling(val ? true : false);
     }
     else if (hWnd == checkUseClipboard) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vSendKeyStepByStep, val ? 0 : 1);
+        controller.setSendKeyStepByStep(val ? false : true); // Inverted logic
     }
+    // Smart Features
     else if (hWnd == checkSmartSwitchKey) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUseSmartSwitchKey, val ? 1 : 0);
+        controller.setUseSmartSwitchKey(val ? true : false);
     }
     else if (hWnd == checkCapsFirstChar) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUpperCaseFirstChar, val ? 1 : 0);
+        controller.setUpperCaseFirstChar(val ? true : false);
     }
     else if (hWnd == checkQuickTelex) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vQuickTelex, val ? 1 : 0);
+        controller.setQuickTelex(val ? true : false);
     }
+    // Macro Settings
     else if (hWnd == checkUseMacro) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUseMacro, val ? 1 : 0);
+        controller.setUseMacro(val ? true : false);
     }
     else if (hWnd == checkUseMacroInEnglish) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUseMacroInEnglishMode, val ? 1 : 0);
+        controller.setUseMacroInEnglishMode(val ? true : false);
     }
     else if (hWnd == checkModernIcon) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vUseGrayIcon, val ? 1 : 0);
+        controller.setUseGrayIcon(val ? true : false);
     }
+    // Spelling Features
     else if (hWnd == checkAllowZWJF) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vAllowConsonantZFWJ, val ? 1 : 0);
+        controller.setAllowConsonantZFWJ(val ? true : false);
     }
     else if (hWnd == checkTempOffSpelling) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vTempOffSpelling, val ? 1 : 0);
+        controller.setTempOffSpelling(val ? true : false);
     }
+    // Quick Features
     else if (hWnd == checkQuickStartConsonant) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vQuickStartConsonant, val ? 1 : 0);
+        controller.setQuickStartConsonant(val ? true : false);
     }
     else if (hWnd == checkQuickEndConsonant) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vQuickEndConsonant, val ? 1 : 0);
+        controller.setQuickEndConsonant(val ? true : false);
     }
     else if (hWnd == checkSupportMetroApp) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vSupportMetroApp, val ? 1 : 0);
+        controller.setSupportMetroApp(val ? true : false);
     }
     else if (hWnd == checkMacroAutoCaps) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vAutoCapsMacro, val ? 1 : 0);
+        controller.setAutoCapsMacro(val ? true : false);
     }
     else if (hWnd == checkCreateDesktopShortcut) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vCreateDesktopShortcut, val ? 1 : 0);
-        //create desktop shortcut
-        if (val)
-            OpenKeyManager::createDesktopShortcut();
+        controller.setCreateDesktopShortcut(val ? true : false);
+        // createDesktopShortcut() is now inside setter
     }
+    // Admin & System
     else if (hWnd == checkRunAsAdmin) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vRunAsAdmin, val ? 1 : 0);
-        requestRestartAsAdmin();
+        bool needsRestart = controller.setRunAsAdmin(val ? true : false);
+        // UI-specific prompt remains here
+        if (needsRestart) {
+            int msgboxID = MessageBox(hDlg,
+                _T("Bạn cần phải khởi động lại OpenKey để kích hoạt chế độ Admin!\\nBạn có muốn khởi động lại OpenKey không?"),
+                _T("OpenKey"),
+                MB_ICONEXCLAMATION | MB_YESNO);
+            if (msgboxID == IDYES) {
+                PostQuitMessage(0);
+                ShellExecute(0, L"runas", OpenKeyHelper::getFullPath().c_str(), 0, 0, SW_SHOWNORMAL);
+            }
+        }
     }
     else if (hWnd == checkCheckNewVersion) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vCheckNewVersion, val ? 1 : 0);
+        controller.setCheckNewVersion(val ? true : false);
     }
     else if (hWnd == checkRememberTableCode) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vRememberCode, val ? 1 : 0);
+        controller.setRememberCode(val ? true : false);
     }
     else if (hWnd == checkAllowOtherLanguages) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vOtherLanguage, val ? 1 : 0);
+        controller.setOtherLanguage(val ? true : false);
     }
     else if (hWnd == checkTempOffOpenKey) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vTempOffOpenKey, val ? 1 : 0);
+        controller.setTempOffOpenKey(val ? true : false);
     }
     else if (hWnd == checkFixChromium) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vFixChromiumBrowser, val ? 1 : 0);
+        controller.setFixChromiumBrowser(val ? true : false);
     }
     else if (hWnd == checkExcludeApps) {
         val = (int)SendMessage(hWnd, BM_GETCHECK, 0, 0);
-        APP_SET_DATA(vExcludeApps, val ? 1 : 0);
+        controller.setExcludeApps(val ? true : false);
     }
-    SystemTrayHelper::updateData();
+    // SystemTrayHelper::updateData() is called inside controller setters
 }
 
 void MainControlDialog::onCharacter(const HWND& hWnd, const UINT16& keyCode) {
@@ -646,21 +680,4 @@ void MainControlDialog::onUpdateButton() {
     EnableWindow(hUpdateButton, true);
 }
 
-void MainControlDialog::requestRestartAsAdmin() {
-    OpenKeyHelper::registerRunOnStartup(false);
-    if (vRunAsAdmin && !IsUserAnAdmin()) {
-        int msgboxID = MessageBox(
-            hDlg,
-            _T("Bạn cần phải khởi động lại OpenKey để kích hoạt chế độ Admin!\nBạn có muốn khởi động lại OpenKey không?"),
-            _T("OpenKey"),
-            MB_ICONEXCLAMATION | MB_YESNO
-        );
-        if (msgboxID == IDYES) {
-            PostQuitMessage(0);
-            ShellExecute(0, L"runas", OpenKeyHelper::getFullPath().c_str(), 0, 0, SW_SHOWNORMAL);
-        }
-    }
-    else {
-        OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
-    }
-}
+

@@ -171,6 +171,7 @@
     <ClInclude Include="MacroDialog.h" />
     <ClInclude Include="MainControlDialog.h" />
     <ClInclude Include="OpenKeyHelper.h" />
+    <ClInclude Include="OpenKeySettingsController.h" />
     <ClInclude Include="OpenKeyManager.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -192,6 +193,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainControlDialog.cpp" />
     <ClCompile Include="OpenKey.cpp" />
+    <ClCompile Include="OpenKeySettingsController.cpp" />
     <ClCompile Include="OpenKeyHelper.cpp" />
     <ClCompile Include="OpenKeyManager.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -35,6 +35,7 @@ redistribute your new version, it MUST be open source.
 #include <vector>
 
 #include <shellapi.h>
+#include <Shlobj.h>
 #include <Commctrl.h>
 #include <psapi.h>
 
