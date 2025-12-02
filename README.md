@@ -3,6 +3,12 @@
 Đây là phiên bản fork từ dự án [OpenKey gốc](https://github.com/tuyenvm/OpenKey) của tác giả Mai Vũ Tuyên.
 Phiên bản này được phát triển tiếp để bổ sung các tính năng mới và sửa lỗi cho người dùng Windows.
 
+## 💡 Về dự án
+
+Đây là một dự án **phát triển cá nhân** với mục đích phục vụ nhu cầu sử dụng của bản thân mình. Sau khi sử dụng và cải tiến, mình nhận thấy nhiều người dùng cũng gặp những vấn đề tương tự, nên quyết định chia sẻ và cố gắng hỗ trợ cộng đồng.
+
+Dự án được phát triển với tinh thần mã nguồn mở, mọi đóng góp và phản hồi từ cộng đồng đều được hoan nghênh.
+
 > **Lưu ý:** Dự án này kế thừa từ OpenKey gốc. Nếu bạn yêu thích phần mềm và muốn ủng hộ tác giả gốc, vui lòng truy cập: [Donate cho tác giả Mai Vũ Tuyên](https://tuyenvm.github.io/donate.html).
 
 ## ✨ Tính năng mới trong phiên bản này
@@ -24,12 +30,17 @@ Phiên bản này đã được tối ưu sâu để hoạt động mượt mà,
 - 🔍 **Tối ưu tra cứu**: Tăng tốc độ phản hồi khi gõ tiếng Việt.
 - ⌨️ **Tối ưu phím tắt**: Xử lý mượt mà các phím tắt hệ thống (Ctrl+C, Alt+Tab...).
 
-> 👉 Xem chi tiết kỹ thuật tại [OPTIMIZATION_DETAILS.md](OPTIMIZATION_DETAILS.md)
+> 👉 Xem chi tiết kỹ thuật tại [OPTIMIZATION_DETAILS.md](Docs/OPTIMIZATION_DETAILS.md)
 
 ### 4. 🔓 Sửa lỗi phím tắt sau khi Lock/Unlock Windows
 Khắc phục hoàn toàn lỗi phím tắt chuyển Anh-Việt không hoạt động sau khi khóa màn hình (Win+L) và đăng nhập lại:
 
-> 👉 Xem chi tiết kỹ thuật tại [LOCK_SCREEN_FIX.md](LOCK_SCREEN_FIX.md)
+> 👉 Xem chi tiết kỹ thuật tại [LOCK_SCREEN_FIX.md](Docs/LOCK_SCREEN_FIX.md)
+
+### 5. ⌨️ Sửa lỗi không gõ được tiếng Việt sau khi xóa ký tự (Backspace)
+Khắc phục lỗi nghiêm trọng khi người dùng gõ nhầm và xóa (backspace) để sửa lại, engine tự động chuyển sang chế độ tiếng Anh và không cho phép gõ tiếng Việt nữa.
+
+> 👉 Xem chi tiết kỹ thuật tại [BACKSPACE_BUG_FIX.md](Docs/BACKSPACE_BUG_FIX.md)
 
 
 
