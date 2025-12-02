@@ -1504,6 +1504,22 @@ void vKeyHandleEvent(const vKeyEvent& event,
                     _longWordHelper.pop_back();
                     _index++;
                 }
+                
+                // FIX: Synchronize state index with typing index
+                // This ensures KeyStates and TypingWord buffers stay in sync after backspace
+                _stateIndex = _index;
+                
+                // FIX: Clear garbage data in KeyStates buffer (defensive programming)
+                // Prevents checkSpelling from accidentally reading stale data beyond current index
+                for (i = _index; i < MAX_BUFF; i++) {
+                    KeyStates[i] = 0;
+                }
+                
+                // FIX: Reset Vietnamese mode flag to allow re-evaluation with fresh spell check
+                // Bug: After backspace, tempDisableKey was left true from previous spell check,
+                // causing engine to incorrectly stay in English mode
+                tempDisableKey = false;
+                
                 if (vCheckSpelling)
                     checkSpelling();
             }
