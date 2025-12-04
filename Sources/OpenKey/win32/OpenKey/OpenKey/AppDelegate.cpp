@@ -58,8 +58,17 @@ bool AppDelegate::isDialogMsg(MSG & msg) const {
 	return (mainDialog != NULL && IsDialogMessage(mainDialog->getHwnd(), &msg)) ||
 		(macroDialog != NULL && IsDialogMessage(macroDialog->getHwnd(), &msg)) || 
 		(convertDialog != NULL && IsDialogMessage(convertDialog->getHwnd(), &msg)) || 
-		(excludedAppsDialog != NULL && IsDialogMessage(excludedAppsDialog->getHwnd(), &msg)) ||
-		(aboutDialog != NULL && IsDialogMessage(aboutDialog->getHwnd(), &msg));
+		(excludedAppsDialog != NULL && IsDialogMessage(excludedAppsDialog->getHwnd(), &msg));
+		// AboutDialog is now a Sciter window, not a Win32 dialog, so it doesn't need IsDialogMessage
+}
+
+void AppDelegate::onOpenKeyAbout() {
+	if (aboutDialog == NULL) {
+		aboutDialog = new AboutDialog();
+		aboutDialog->show();
+	} else {
+		aboutDialog->show();
+	}
 }
 
 void AppDelegate::checkUpdate() {
@@ -152,9 +161,6 @@ void AppDelegate::closeDialog(BaseDialog * dialog) {
 	if (mainDialog == dialog) {
 		delete mainDialog;
 		mainDialog = NULL;
-	} else if (aboutDialog == dialog) {
-		delete aboutDialog;
-		aboutDialog = NULL;
 	} else if (macroDialog == dialog) {
 		delete macroDialog;
 		macroDialog = NULL;
@@ -164,6 +170,14 @@ void AppDelegate::closeDialog(BaseDialog * dialog) {
 	} else if (excludedAppsDialog == dialog) {
 		delete excludedAppsDialog;
 		excludedAppsDialog = NULL;
+	}
+	// AboutDialog is handled separately via closeAboutDialog()
+}
+
+void AppDelegate::closeAboutDialog() {
+	if (aboutDialog) {
+		delete aboutDialog;
+		aboutDialog = NULL;
 	}
 }
 
@@ -303,15 +317,6 @@ void AppDelegate::onTableCode(const int & code) {
 
 void AppDelegate::onControlPanel() {
 	createMainDialog();
-}
-
-void AppDelegate::onOpenKeyAbout() {
-	if (aboutDialog == NULL) {
-		aboutDialog = new AboutDialog(hInstance, IDD_ABOUTBOX);
-		aboutDialog->show();
-	} else {
-		aboutDialog->bringOnTop();
-	}
 }
 
 void AppDelegate::onOpenKeyExit() {

@@ -19,10 +19,13 @@ redistribute your new version, it MUST be open source.
 #include "MacroDialog.h"
 
 class BaseDialog;
+class AboutDialog; // Forward declaration for Sciter window
+
 class AppDelegate {
 private:
 	HINSTANCE hInstance;
-	BaseDialog* mainDialog = NULL, *aboutDialog = NULL, *macroDialog = NULL, *convertDialog = NULL, *excludedAppsDialog = NULL;
+	BaseDialog* mainDialog = NULL, *macroDialog = NULL, *convertDialog = NULL, *excludedAppsDialog = NULL;
+	AboutDialog* aboutDialog = NULL; // Sciter window - managed separately
 private:
 	bool isDialogMsg(MSG & msg) const;
 	void checkUpdate();
@@ -32,6 +35,7 @@ public:
 	int run(HINSTANCE hInstance);
 	void createMainDialog();
 	void closeDialog(BaseDialog* dialog);
+	void closeAboutDialog(); // Separate method for AboutDialog
 public: //event
 	void onInputMethodChangedFromHotKey();
 	void onDefaultConfig();

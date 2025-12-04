@@ -12,17 +12,51 @@ You can fork, modify, improve this program. If you
 redistribute your new version, it MUST be open source.
 -----------------------------------------------------------*/
 #pragma once
-#include "BaseDialog.h"
 
-class AboutDialog :	public BaseDialog {
-protected:
-	INT_PTR eventProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void initDialog();
+// Undefine Windows macros that conflict with Sciter enums
+#ifdef KEY_DOWN
+#undef KEY_DOWN
+#endif
+#ifdef KEY_UP
+#undef KEY_UP
+#endif
+
+#include "sciter-x-window.hpp"
+#include <string>
+
+class AboutDialog : public sciter::window {
 public:
-	AboutDialog(const HINSTANCE & hInstance, const int & resourceId);
+	AboutDialog();
 	~AboutDialog();
-	virtual void fillData() override;
+
+	// Show the about dialog
+	void show();
+
+	// Override to avoid dependency on sciter::application
+	HINSTANCE get_resource_instance() const { return NULL; }
+
+	// Native functions callable from JavaScript via SOM_PASSPORT
+	void openUrl(std::string url);
+	void checkUpdate();
+	void closeWindow();
+	void showUpdateDialog(std::string message, std::string newVersion);
+	void showInfoMessage(std::string message);
+
+	// SOM_PASSPORT macro for C++ <-> JavaScript binding
+	SOM_PASSPORT_BEGIN(AboutDialog)
+		SOM_FUNCS(
+			SOM_FUNC(openUrl),
+			SOM_FUNC(checkUpdate),
+			SOM_FUNC(closeWindow),
+			SOM_FUNC(showUpdateDialog),
+			SOM_FUNC(showInfoMessage)
+		)
+	SOM_PASSPORT_END
+
 private:
-	HWND hUpdateButton;
-	void onUpdateButton();
+	// Set version information in the UI
+	void setVersionInfo();
+	
+	// Enable Windows Acrylic blur effect
+	void enableAcrylicEffect();
 };

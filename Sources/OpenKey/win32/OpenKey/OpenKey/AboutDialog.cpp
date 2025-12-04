@@ -14,102 +14,202 @@ redistribute your new version, it MUST be open source.
 #include "stdafx.h"
 #include "AboutDialog.h"
 #include "AppDelegate.h"
+#include "OpenKeyHelper.h"
+#include "OpenKeyManager.h"
+#include "../../../engine/Engine.h"
+#include <shellapi.h>
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
-AboutDialog::AboutDialog(const HINSTANCE & hInstance, const int & resourceId)
-	: BaseDialog(hInstance, resourceId) {
+// Implement missing Sciter application function
+namespace sciter {
+	namespace application {
+		HINSTANCE hinstance() {
+			return GetModuleHandle(NULL);
+		}
+	}
+}
+
+AboutDialog::AboutDialog()
+	: sciter::window(SW_POPUP | SW_ALPHA | SW_ENABLE_DEBUG, RECT{0, 0, 500, 600}) {
+	
+	// Load HTML file - get path relative to executable
+	WCHAR exePath[MAX_PATH];
+	GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	
+	// Remove executable name to get directory
+	WCHAR* lastSlash = wcsrchr(exePath, L'\\');
+	if (lastSlash) *lastSlash = L'\0';
+	
+	// Resources folder is at same level as executable
+	WCHAR htmlPath[MAX_PATH];
+	swprintf_s(htmlPath, MAX_PATH, L"%s\\Resources\\Sciter\\about\\about.html", exePath);
+	
+	if (!load(htmlPath)) {
+		MessageBoxW(NULL, htmlPath, L"Failed to load about.html", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	// Show the window
+	expand();
+	
+	// Enable Acrylic blur effect
+	enableAcrylicEffect();
+
+	// Set version info after window is loaded
+	// TODO: Implement proper JavaScript calling
+	// setVersionInfo();
 }
 
 AboutDialog::~AboutDialog() {
 }
 
-void AboutDialog::fillData() {
+void AboutDialog::show() {
+	// Show the window
+	expand();
 }
 
-INT_PTR AboutDialog::eventProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	switch (uMsg) {
-	case WM_INITDIALOG:
-		this->hDlg = hDlg;
-		initDialog();
-		return TRUE;
-	case WM_COMMAND: {
-		int wmId = LOWORD(wParam);
-		switch (wmId) {
-		case IDM_EXIT:
-		case IDBUTTON_OK:
-			AppDelegate::getInstance()->closeDialog(this);
-			break;
-		case IDC_BUTTON_CHECK_VERSION:
-			onUpdateButton();
-			break;
-		}
-		break;
-	}
-	case WM_NOTIFY:
-		switch (((LPNMHDR)lParam)->code) {
-		case NM_CLICK:
-		case NM_RETURN: {
-			PNMLINK link = (PNMLINK)lParam;
-			if (link->hdr.idFrom == IDC_SYSLINK_HOME_PAGE)
-				ShellExecute(NULL, _T("open"), _T("https://github.com/tuyenvm/OpenKey"), NULL, NULL, SW_SHOWNORMAL);
-			else if (link->hdr.idFrom == IDC_SYSLINK_NEW_VERSION)
-				ShellExecute(NULL, _T("open"), _T("https://github.com/tuyenvm/OpenKey/releases"), NULL, NULL, SW_SHOWNORMAL);
-			else if (link->hdr.idFrom == IDC_SYSLINK_FANPAGE)
-				ShellExecute(NULL, _T("open"), _T("https://www.facebook.com/OpenKeyVN"), NULL, NULL, SW_SHOWNORMAL);
-		}
-		break;
-		}
-	}
-	return FALSE;
-}
-
-void AboutDialog::initDialog() {
-	//dialog icon
-	SET_DIALOG_ICON(IDI_APP_ICON);
+void AboutDialog::setVersionInfo() {
+	// Get version and build date
+	std::wstring version = OpenKeyHelper::getVersionString();
+	std::wstring buildDate = _T(__DATE__);
 	
-	hUpdateButton = GetDlgItem(hDlg, IDC_BUTTON_CHECK_VERSION);
-
-	HFONT hFont = CreateFont(48, 0, 0, 0, FW_THIN, FALSE, FALSE, FALSE,
-		ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, 
-		DEFAULT_PITCH | FF_SWISS | FF_MODERN, _T("Segoe UI"));
-	SendDlgItemMessage(hDlg, IDC_STATIC_APP_TITLE, WM_SETFONT, WPARAM(hFont), TRUE);
-
-	wchar_t buffer[256];
-	wsprintfW(buffer, _T("Phiên bản %s cho Windows - Ngày cập nhật: %s"), OpenKeyHelper::getVersionString().c_str(), _T(__DATE__));
-	SendDlgItemMessage(hDlg, IDC_STATIC_APP_VERSION, WM_SETTEXT, 0, LPARAM(buffer));
-
-	hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE,
-		ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-		DEFAULT_PITCH | FF_SWISS | FF_MODERN, _T("Arial"));
-	SendDlgItemMessage(hDlg, IDC_STATIC_APP_SUB_TITLE, WM_SETFONT, WPARAM(hFont), TRUE);
+	// Convert to UTF-8 for JavaScript
+	std::string versionUtf8 = wideStringToUtf8(version);
+	std::string buildDateUtf8 = wideStringToUtf8(buildDate);
+	
+	// Call JavaScript function to set version info
+	call_function("setVersionInfo", versionUtf8.c_str(), buildDateUtf8.c_str());
 }
 
-void AboutDialog::onUpdateButton() {
-	EnableWindow(hUpdateButton, false);
-	string newVersion;
-	if (OpenKeyManager::checkUpdate(newVersion)) {
-		WCHAR msg[256];
-		wsprintf(msg, 
-			TEXT("OpenKey Có phiên bản mới (%s), bạn có muốn cập nhật không?"),
-			utf8ToWideString(newVersion).c_str());
+void AboutDialog::openUrl(std::string url) {
+	// Open URL in system default browser
+	ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
 
-		int msgboxID = MessageBox(
-			hDlg,
-			msg,
-			_T("OpenKey Update"),
-			MB_ICONEXCLAMATION | MB_YESNO
-		);
-		if (msgboxID == IDYES) {
-			//Call OpenKeyUpdate
-			WCHAR path[MAX_PATH];
-			GetCurrentDirectory(MAX_PATH, path);
-			wsprintf(path, TEXT("%s\\OpenKeyUpdate.exe"), path);
-			ShellExecute(0, L"", path, 0, 0, SW_SHOWNORMAL);
-
-			AppDelegate::getInstance()->onOpenKeyExit();
-		}
-		
+void AboutDialog::checkUpdate() {
+	std::string newVersion;
+	bool hasUpdate = OpenKeyManager::checkUpdate(newVersion);
+	
+	// Call JavaScript function to show result
+	// TODO: Implement proper JavaScript calling
+	// call_function("showUpdateResult", hasUpdate, newVersion.c_str());
+	
+	// Temporary: show message box instead
+	if (hasUpdate) {
+		MessageBoxA(NULL, ("New version available: " + newVersion).c_str(), "Update", MB_OK);
 	} else {
-		MessageBox(hDlg, _T("Bạn đang dùng phiên bản mới nhất!"), _T("OpenKey Update"), MB_OK);
+		MessageBoxA(NULL, "You are using the latest version!", "Update", MB_OK);
 	}
-	EnableWindow(hUpdateButton, true);
+}
+
+void AboutDialog::closeWindow() {
+	// Close the window
+	close();
+	
+	// Notify AppDelegate
+	AppDelegate::getInstance()->closeAboutDialog();
+}
+
+void AboutDialog::showUpdateDialog(std::string message, std::string newVersion) {
+	// Convert message to wide string
+	std::wstring wideMessage = utf8ToWideString(message);
+	
+	int msgboxID = MessageBoxW(
+		get_hwnd(),
+		wideMessage.c_str(),
+		L"OpenKey Update",
+		MB_ICONEXCLAMATION | MB_YESNO
+	);
+	
+	if (msgboxID == IDYES) {
+		// Call OpenKeyUpdate
+		WCHAR path[MAX_PATH];
+		GetCurrentDirectoryW(MAX_PATH, path);
+		wcscat_s(path, L"\\OpenKeyUpdate.exe");
+		ShellExecuteW(0, L"", path, 0, 0, SW_SHOWNORMAL);
+		
+		AppDelegate::getInstance()->onOpenKeyExit();
+	}
+}
+
+void AboutDialog::showInfoMessage(std::string message) {
+	std::wstring wmessage = utf8ToWideString(message);
+	MessageBoxW(get_hwnd(), wmessage.c_str(), L"OpenKey", MB_OK | MB_ICONINFORMATION);
+}
+
+// --- DWM Acrylic Effect Implementation ---
+
+// Undocumented Windows API structures
+struct ACCENT_POLICY {
+	int AccentState;
+	int AccentFlags;
+	int GradientColor;  // ABGR format
+	int AnimationId;
+};
+
+struct WINDOWCOMPOSITIONATTRIBDATA {
+	int Attrib;
+	void* pvData;
+	size_t cbData;
+};
+
+enum ACCENT_STATE {
+	ACCENT_DISABLED = 0,
+	ACCENT_ENABLE_GRADIENT = 1,
+	ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+	ACCENT_ENABLE_BLURBEHIND = 3,
+	ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,  // Windows 10 1803+
+	ACCENT_ENABLE_HOSTBACKDROP = 5         // Windows 11 (Mica)
+};
+
+void AboutDialog::enableAcrylicEffect() {
+	HWND hwnd = get_hwnd();
+
+	// 1. CRITICAL: Set WS_EX_LAYERED style first
+	//    Without this, the window will have black background instead of blur
+	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+
+	// 2. Try Acrylic (Windows 10 1803+)
+	HMODULE hUser = GetModuleHandle(L"user32.dll");
+	if (hUser) {
+		typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
+		auto SetWindowCompositionAttribute = 
+			(pSetWindowCompositionAttribute)GetProcAddress(hUser, "SetWindowCompositionAttribute");
+
+		if (SetWindowCompositionAttribute) {
+			ACCENT_POLICY policy = { 0 };
+			policy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+			policy.AccentFlags = 0;
+			policy.GradientColor = 0x01FFFFFF;  // ABGR: 1% white tint (nearly transparent)
+			policy.AnimationId = 0;
+
+			WINDOWCOMPOSITIONATTRIBDATA data = { 0 };
+			data.Attrib = 19;  // WCA_ACCENT_POLICY
+			data.pvData = &policy;
+			data.cbData = sizeof(policy);
+
+			SetWindowCompositionAttribute(hwnd, &data);
+		}
+		else {
+			// Fallback to DWM Blur (Windows 7/8)
+			DWM_BLURBEHIND bb = { 0 };
+			bb.dwFlags = DWM_BB_ENABLE;
+			bb.fEnable = TRUE;
+			bb.hRgnBlur = NULL;
+			DwmEnableBlurBehindWindow(hwnd, &bb);
+		}
+	}
+
+	// 3. Fix black corners on Windows 11
+	//    Windows 11 requires explicit corner preference
+	typedef enum {
+		DWMWCP_DEFAULT = 0,
+		DWMWCP_DONOTROUND = 1,
+		DWMWCP_ROUND = 2,
+		DWMWCP_ROUNDSMALL = 3
+	} DWM_WINDOW_CORNER_PREFERENCE;
+
+	DWM_WINDOW_CORNER_PREFERENCE preference = DWMWCP_ROUND;
+	DwmSetWindowAttribute(hwnd, 33, &preference, sizeof(preference));  // DWMWA_WINDOW_CORNER_PREFERENCE = 33
 }
