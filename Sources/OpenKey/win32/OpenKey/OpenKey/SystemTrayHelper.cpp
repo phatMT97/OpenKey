@@ -101,6 +101,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_USER+2019:
 		AppDelegate::getInstance()->onControlPanel();
 		break;
+	
+	// Handle deferred AboutDialog destruction (posted from WM_CLOSE handler)
+	case WM_USER+100:
+		AppDelegate::getInstance()->closeAboutDialog();
+		break;
+	
+	// Handle settings reload notification from SettingsDialog subprocess
+	case WM_USER+101:
+		// Reload settings from registry
+		APP_GET_DATA(vLanguage, 1);
+		APP_GET_DATA(vInputType, 0);
+		APP_GET_DATA(vCodeTable, 0);
+		APP_GET_DATA(vSwitchKeyStatus, 0);
+		APP_GET_DATA(vUseSmartSwitchKey, 0);
+		APP_GET_DATA(vCheckSpelling, 1);
+		APP_GET_DATA(vUseModernOrthography, 0);
+		// Refresh tray icon and menu to reflect new settings
+		SystemTrayHelper::updateData();
+		break;
 		
 	// Handle session change (lock/unlock)
 	case WM_WTSSESSION_CHANGE:
@@ -136,6 +155,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		if (lParam == WM_LBUTTONUP) {
 			AppDelegate::getInstance()->onToggleVietnamese();
 			SystemTrayHelper::updateData();
+			// Notify settings subprocess to update UI if it's open
+			HWND settingsWnd = FindWindow(NULL, _T("OpenKey Settings"));
+			if (settingsWnd) {
+				PostMessage(settingsWnd, WM_USER + 102, 0, 0);
+			}
 		} else if (lParam == WM_RBUTTONDOWN) {
 			POINT curPoint;
 			GetCursorPos(&curPoint);
@@ -209,6 +233,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				break;
 			}
 			SystemTrayHelper::updateData();
+			
+			// Notify settings subprocess to update UI if it's open
+			HWND settingsWnd = FindWindow(NULL, _T("OpenKey Settings"));
+			if (settingsWnd) {
+				PostMessage(settingsWnd, WM_USER + 102, 0, 0);
+			}
 		}
 	}
 	break;

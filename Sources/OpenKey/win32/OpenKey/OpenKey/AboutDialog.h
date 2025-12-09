@@ -35,23 +35,15 @@ public:
 	// Override to avoid dependency on sciter::application
 	HINSTANCE get_resource_instance() const { return NULL; }
 
-	// Native functions callable from JavaScript via SOM_PASSPORT
+	// Handle Sciter DOM events (button clicks, etc.)
+	bool handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) override;
+
+	// Native functions (called from handle_event, not JavaScript)
 	void openUrl(std::string url);
 	void checkUpdate();
 	void closeWindow();
 	void showUpdateDialog(std::string message, std::string newVersion);
 	void showInfoMessage(std::string message);
-
-	// SOM_PASSPORT macro for C++ <-> JavaScript binding
-	SOM_PASSPORT_BEGIN(AboutDialog)
-		SOM_FUNCS(
-			SOM_FUNC(openUrl),
-			SOM_FUNC(checkUpdate),
-			SOM_FUNC(closeWindow),
-			SOM_FUNC(showUpdateDialog),
-			SOM_FUNC(showInfoMessage)
-		)
-	SOM_PASSPORT_END
 
 private:
 	// Set version information in the UI
@@ -59,4 +51,7 @@ private:
 	
 	// Enable Windows Acrylic blur effect
 	void enableAcrylicEffect();
+	
+	// Subclass procedure for WM_NCHITTEST (window dragging)
+	static LRESULT CALLBACK SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 };

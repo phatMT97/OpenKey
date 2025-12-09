@@ -19,7 +19,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    behavior: window-move;
 
     /* Rounded corners */
     border-radius: 12px;

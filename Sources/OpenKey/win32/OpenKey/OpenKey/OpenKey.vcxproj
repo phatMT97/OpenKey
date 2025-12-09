@@ -168,6 +168,7 @@
     <ClInclude Include="..\..\..\engine\SmartSwitchKey.h" />
     <ClInclude Include="..\..\..\engine\Vietnamese.h" />
     <ClInclude Include="AboutDialog.h" />
+    <ClInclude Include="SettingsDialog.h" />
     <ClInclude Include="AppDelegate.h" />
     <ClInclude Include="BaseDialog.h" />
     <ClInclude Include="ConvertToolDialog.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="..\..\..\engine\SmartSwitchKey.cpp" />
     <ClCompile Include="..\..\..\engine\Vietnamese.cpp" />
     <ClCompile Include="AboutDialog.cpp" />
+    <ClCompile Include="SettingsDialog.cpp" />
     <ClCompile Include="AppDelegate.cpp" />
     <ClCompile Include="BaseDialog.cpp" />
     <ClCompile Include="ConvertToolDialog.cpp" />

@@ -62,12 +62,30 @@ bool AppDelegate::isDialogMsg(MSG & msg) const {
 		// AboutDialog is now a Sciter window, not a Win32 dialog, so it doesn't need IsDialogMessage
 }
 
+#define ABOUT_WINDOW_TITLE L"About OpenKey"
+
 void AppDelegate::onOpenKeyAbout() {
-	if (aboutDialog == NULL) {
-		aboutDialog = new AboutDialog();
-		aboutDialog->show();
-	} else {
-		aboutDialog->show();
+	// Anti-spam: Check if About window already exists
+	HWND existingAbout = FindWindowW(NULL, ABOUT_WINDOW_TITLE);
+	if (existingAbout) {
+		// Bring to front instead of spawning new
+		SetForegroundWindow(existingAbout);
+		return;
+	}
+	
+	// Spawn subprocess (Fire and Forget)
+	WCHAR exePath[MAX_PATH];
+	GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	
+	STARTUPINFOW si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	
+	wchar_t cmdLine[MAX_PATH + 20];
+	swprintf_s(cmdLine, L"\"%s\" --about", exePath);
+	
+	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		CloseHandle(pi.hProcess);  // Don't wait
+		CloseHandle(pi.hThread);
 	}
 }
 
@@ -147,12 +165,29 @@ int AppDelegate::run(HINSTANCE hInstance) {
 	return 0;
 }
 
+#define SETTINGS_WINDOW_TITLE L"OpenKey Settings"
+
 void AppDelegate::createMainDialog() {
-	if (mainDialog == NULL) {
-		mainDialog = new MainControlDialog(hInstance, IDD_DIALOG_MAIN);
-		mainDialog->show();
-	} else {
-		mainDialog->bringOnTop();
+	// Anti-spam: Check if Settings window already exists
+	HWND existingSettings = FindWindowW(NULL, SETTINGS_WINDOW_TITLE);
+	if (existingSettings) {
+		SetForegroundWindow(existingSettings);
+		return;
+	}
+	
+	// Spawn settings subprocess (Fire and Forget)
+	WCHAR exePath[MAX_PATH];
+	GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	
+	STARTUPINFOW si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	
+	wchar_t cmdLine[MAX_PATH + 20];
+	swprintf_s(cmdLine, L"\"%s\" --settings", exePath);
+	
+	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 	}
 }
 
@@ -175,10 +210,8 @@ void AppDelegate::closeDialog(BaseDialog * dialog) {
 }
 
 void AppDelegate::closeAboutDialog() {
-	if (aboutDialog) {
-		delete aboutDialog;
-		aboutDialog = NULL;
-	}
+	// Note: Sciter windows cannot be simply deleted due to internal reference counting
+	// The window is hidden and reused on next open
 }
 
 void AppDelegate::onInputMethodChangedFromHotKey() {

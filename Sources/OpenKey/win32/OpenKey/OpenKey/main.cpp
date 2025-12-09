@@ -13,6 +13,8 @@ redistribute your new version, it MUST be open source.
 -----------------------------------------------------------*/
 #include "stdafx.h"
 #include "AppDelegate.h"
+#include "AboutDialog.h"
+#include "SettingsDialog.h"
 #include <Shlobj.h>
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -21,6 +23,34 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 						_In_ int       nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
+	
+	// ===== ROUTER: Single Exe - Multi Personality =====
+	// Check if we're running as About UI subprocess
+	if (lpCmdLine && wcsstr(lpCmdLine, L"--about")) {
+		// UI PROCESS MODE: Show About dialog only, then exit
+		// This process is isolated - 30MB RAM, freed on close
+		AboutDialog dialog;
+		
+		MSG msg;
+		while (GetMessage(&msg, NULL, 0, 0)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		return 0;  // Clean exit, subprocess terminated
+	}
+	
+	// Check if we're running as Settings UI subprocess
+	if (lpCmdLine && wcsstr(lpCmdLine, L"--settings")) {
+		SettingsDialog dialog;
+		MSG msg;
+		while (GetMessage(&msg, NULL, 0, 0)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		return 0;
+	}
+	
+	// ===== ENGINE PROCESS MODE: Normal app =====
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	
 #if NDEBUG

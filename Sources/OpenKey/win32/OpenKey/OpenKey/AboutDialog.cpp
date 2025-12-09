@@ -19,7 +19,11 @@ redistribute your new version, it MUST be open source.
 #include "../../../engine/Engine.h"
 #include <shellapi.h>
 #include <dwmapi.h>
+#include <windowsx.h>  // For GET_X_LPARAM, GET_Y_LPARAM
+#include <commctrl.h>  // For SetWindowSubclass
+#include "sciter-x-dom.hpp"  // For SciterFindElement
 #pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "comctl32.lib")
 
 // Implement missing Sciter application function
 namespace sciter {
@@ -55,18 +59,101 @@ AboutDialog::AboutDialog()
 	
 	// Enable Acrylic blur effect
 	enableAcrylicEffect();
-
-	// Set version info after window is loaded
-	// TODO: Implement proper JavaScript calling
-	// setVersionInfo();
+	
+	// Subclass window for dragging
+	SetWindowSubclass(get_hwnd(), AboutDialog::SubclassProc, 1, 0);
+	
+	// Set window title for anti-spam detection
+	SetWindowTextW(get_hwnd(), L"About OpenKey");
+	
+	// Center window on screen
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	RECT rc;
+	GetWindowRect(get_hwnd(), &rc);
+	int winWidth = rc.right - rc.left;
+	int winHeight = rc.bottom - rc.top;
+	int x = (screenWidth - winWidth) / 2;
+	int y = (screenHeight - winHeight) / 2;
+	SetWindowPos(get_hwnd(), NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
 
 AboutDialog::~AboutDialog() {
+	if (get_hwnd()) {
+		RemoveWindowSubclass(get_hwnd(), AboutDialog::SubclassProc, 1);
+	}
+}
+
+// Subclass procedure for window dragging and close handling
+LRESULT CALLBACK AboutDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+	// WM_CLOSE: Force exit subprocess (bypasses Sciter cleanup issues)
+	if (msg == WM_CLOSE) {
+		ExitProcess(0);  // Force exit - subprocess terminates immediately, RAM freed
+		return 0;
+	}
+	
+	if (msg == WM_NCHITTEST) {
+		LRESULT result = DefSubclassProc(hwnd, msg, wParam, lParam);
+		
+		if (result == HTCLIENT) {
+			POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+			ScreenToClient(hwnd, &pt);
+			
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+			
+			// Only allow dragging on very top (header area only)
+			// Keep it small to ensure most content is clickable
+			const int DRAG_ZONE_HEIGHT = 150;  // Only top 150px is draggable
+			
+			if (pt.y < DRAG_ZONE_HEIGHT) {
+				return HTCAPTION;  // Enable dragging on header
+			}
+			// Otherwise return HTCLIENT (let Sciter handle clicks)
+		}
+		return result;
+	}
+	
+	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
 void AboutDialog::show() {
-	// Show the window
-	expand();
+	// Show the window using Win32 API directly
+	ShowWindow(get_hwnd(), SW_SHOW);
+	SetForegroundWindow(get_hwnd());
+}
+
+// Handle Sciter DOM events - catches BUTTON_CLICK
+bool AboutDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
+	// First let base class handle it
+	if (sciter::window::handle_event(he, params))
+		return true;
+	
+	if (params.cmd == BUTTON_CLICK) {
+		sciter::dom::element el(params.heTarget);
+		auto id = el.get_attribute("id");
+		
+		// Check for button clicks
+		if (id == L"check-update") {
+			checkUpdate();
+			return true;
+		}
+		else if (id == L"close-btn") {
+			closeWindow();
+			return true;
+		}
+		
+		// Check for link buttons with data-url attribute
+		auto dataUrl = el.get_attribute("data-url");
+		if (dataUrl.length() > 0) {
+			std::wstring wurl(dataUrl.c_str());
+			std::string url(wurl.begin(), wurl.end());
+			openUrl(url);
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 void AboutDialog::setVersionInfo() {
@@ -104,11 +191,8 @@ void AboutDialog::checkUpdate() {
 }
 
 void AboutDialog::closeWindow() {
-	// Close the window
-	close();
-	
-	// Notify AppDelegate
-	AppDelegate::getInstance()->closeAboutDialog();
+	// Force exit subprocess (bypasses Sciter cleanup issues)
+	ExitProcess(0);
 }
 
 void AboutDialog::showUpdateDialog(std::string message, std::string newVersion) {

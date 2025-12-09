@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenKey Settings</title>
+    <link rel="stylesheet" href="settings.css">
+    <script type="module" src="settings.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header: V - toggle - E - dropdown - settings button -->
+        <div class="header">
+            <span class="lang-label" id="lang-v">V</span>
+            <!-- Div-based toggle for proper Sciter styling -->
+            <div class="toggle-switch" id="toggle-language">
+                <div class="toggle-thumb"></div>
+            </div>
+            <!-- Hidden input to fire VALUE_CHANGED -->
+            <input type="hidden" id="val-toggle-language" value="0">
+            <span class="lang-label" id="lang-e">E</span>
+
+            <select class="input-type-dropdown" id="input-type">
+                <option value="0">Telex</option>
+                <option value="1">VNI</option>
+                <option value="2">Simple Telex 1</option>
+                <option value="3">Simple Telex 2</option>
+            </select>
+
+            <button class="btn-settings" id="more-settings" title="Cài đặt nâng cao">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.64-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Settings Card -->
+        <div class="settings-card">
+            <!-- 1. Bảng mã (Code Table) -->
+            <div class="setting-row">
+                <span class="setting-label">Bảng mã</span>
+                <select class="setting-dropdown" id="bang-ma">
+                    <option value="0">Unicode</option>
+                    <option value="1">TCVN3 (ABC)</option>
+                    <option value="2">VNI Windows</option>
+                    <option value="3">Unicode Compound</option>
+                    <option value="4">Vietnamese Locale</option>
+                </select>
+            </div>
+
+            <!-- 2. Phím Chuyển (Switch Key) - 2 rows layout -->
+            <div class="setting-row setting-row-vertical">
+                <span class="setting-label">Phím Chuyển</span>
+                <div class="switch-key-container">
+                    <!-- Row 1: Ctrl Alt -->
+                    <div class="switch-key-row">
+                        <div class="switch-key-item">
+                            <span class="switch-key-label">Ctrl</span>
+                            <div class="toggle-switch-small" id="key-ctrl">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-key-ctrl" value="0">
+                        </div>
+                        <div class="switch-key-item">
+                            <span class="switch-key-label">Alt</span>
+                            <div class="toggle-switch-small" id="key-alt">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-key-alt" value="0">
+                        </div>
+                    </div>
+                    <!-- Row 2: Win Shift + textbox -->
+                    <div class="switch-key-row">
+                        <div class="switch-key-item">
+                            <span class="switch-key-label">Win</span>
+                            <div class="toggle-switch-small" id="key-win">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-key-win" value="0">
+                        </div>
+                        <div class="switch-key-item">
+                            <span class="switch-key-label">Shift</span>
+                            <div class="toggle-switch-small" id="key-shift">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-key-shift" value="0">
+                        </div>
+                        <input type="text" class="switch-key-input" id="switch-key-char" maxlength="1" placeholder="~"
+                            title="Phím chuyển">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Kêu Beep -->
+            <div class="setting-row">
+                <span class="setting-label">Kêu Beep</span>
+                <div class="toggle-switch-small" id="beep-sound">
+                    <div class="toggle-thumb-small"></div>
+                </div>
+                <input type="hidden" id="val-beep-sound" value="0">
+            </div>
+
+            <!-- 4. Loại trừ ứng dụng thông minh -->
+            <div class="setting-row">
+                <span class="setting-label">Loại trừ ứng dụng thông minh</span>
+                <div class="toggle-switch-small" id="smart-switch">
+                    <div class="toggle-thumb-small"></div>
+                </div>
+                <input type="hidden" id="val-smart-switch" value="0">
+            </div>
+
+            <!-- 5. Cài đặt nâng cao -->
+            <div class="setting-row">
+                <span class="setting-label">Cài đặt nâng cao</span>
+                <button class="btn-advanced" id="btn-advanced">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
