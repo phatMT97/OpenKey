@@ -14,36 +14,17 @@ OpenKey.exe --settings   → SettingsDialog subprocess (30MB)
 
 **Why subprocess?** Sciter objects cannot be cleanly deleted (assertion errors). Subprocess exits = OS frees all memory.
 
-## File Structure
-
-```
-Sources/OpenKey/win32/OpenKey/OpenKey/
-├── AboutDialog.h/.cpp      # About dialog
-├── SettingsDialog.h/.cpp   # Settings dialog
-└── main.cpp                # Router (--about, --settings flags)
-
-Resources/Sciter/
-├── about/                  # AboutDialog UI
-│   ├── about.html
-│   └── about.css
-└── settings/               # SettingsDialog UI
-    ├── settings.html
-    └── settings.css
-
-lib/sciter/                 # Sciter SDK
-bin/                        # sciter.dll (must be next to exe)
-```
-
 ## Quick Reference
 
 ### DO ✅
 
 | Task | Code |
 |------|------|
-| **Include Sciter** | `#include "sciter-x-window.hpp"` |
 | **Find element** | `root.find_first("#id")` with `char*` |
 | **Get value** | `el.get_value().get<int>()` |
 | **Set value** | `el.set_value(sciter::value(intVal))` |
+| **Get element size** | `RECT r = el.get_location(CONTENT_BOX)` |
+| **Set class** | `el.set_attribute("class", L"toggle checked")` |
 | **Handle events** | Override `handle_event(HELEMENT, BEHAVIOR_EVENT_PARAMS&)` |
 | **Exit subprocess** | `ExitProcess(0)` in WM_CLOSE |
 | **Notify main process** | `PostMessage(mainWnd, WM_USER+101, 0, 0)` |
@@ -53,147 +34,50 @@ bin/                        # sciter.dll (must be next to exe)
 | Don't | Why | Instead |
 |-------|-----|---------|
 | `delete sciterWindow` | Assertion error | Use subprocess, call `ExitProcess(0)` |
-| `call_function()` | Often fails with assertion | Use `DOCUMENT_READY` + `set_value()` |
 | `find_first(L"#id")` | Wrong type | Use `char*`: `find_first("#id")` |
-| `wcscmp(tagName, ...)` | `tagName` is `astring` | Use `strcmp(tagName.c_str(), ...)` |
-| SOM bindings on window | Doesn't work reliably | Use `handle_event()` directly |
+| `<label>` around toggles | Blocks clicks | Use `<div>` |
+| `<input type="checkbox">` | ::before/::after broken | Use div-based toggles |
+| `height: 100%` on container | Breaks auto-fit | Use `height: auto` |
 
-## Common Errors & Fixes
+---
 
-### Header Conflicts
+## Settings Synchronization
+
+### UI → Registry → Main Process (Save)
+
 ```cpp
-// BEFORE including Sciter
-#ifdef KEY_DOWN
-#undef KEY_DOWN
-#endif
-#ifdef KEY_UP
-#undef KEY_UP
-#endif
-```
-
-### Missing hinstance()
-```cpp
-namespace sciter {
-    namespace application {
-        HINSTANCE hinstance() { return GetModuleHandle(NULL); }
-    }
-}
-```
-
-### sciter.dll Not Found
-```
-Assertion failed: _api (sciter-x-api.h:351)
-```
-→ Copy `sciter.dll` next to `.exe`
-
-### Assertion on Close
-```
-Assertion failed: _ref_cntr == 0
-```
-→ Use `ExitProcess(0)` instead of deleting window
-
-## Subprocess Implementation
-
-### 1. Router (main.cpp)
-```cpp
-if (lpCmdLine && wcsstr(lpCmdLine, L"--settings")) {
-    SettingsDialog dialog;
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-    return 0;
-}
-```
-
-### 2. Spawn from Main Process
-```cpp
-void AppDelegate::createMainDialog() {
-    HWND existing = FindWindowW(NULL, L"OpenKey Settings");
-    if (existing) { SetForegroundWindow(existing); return; }
+// In handle_event VALUE_CHANGED handler:
+if (id == L"val-toggle-language") {
+    sciter::value val = el.get_value();
+    std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+    bool checked = (strVal == L"1");
     
-    WCHAR exePath[MAX_PATH];
-    GetModuleFileNameW(NULL, exePath, MAX_PATH);
-    STARTUPINFOW si = { sizeof(si) };
-    PROCESS_INFORMATION pi;
-    wchar_t cmdLine[MAX_PATH + 20];
-    swprintf_s(cmdLine, L"\"%s\" --settings", exePath);
-    CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-}
-```
-
-### 3. Force Exit on Close
-```cpp
-if (msg == WM_CLOSE) {
-    ExitProcess(0);
-    return 0;
-}
-```
-
-## Settings Dialog Pattern
-
-### Load from Registry (constructor)
-```cpp
-SettingsDialog::SettingsDialog() : sciter::window(...) {
-    APP_GET_DATA(vLanguage, 1);
-    APP_GET_DATA(vInputType, 0);
-    // ... load HTML
-}
-```
-
-### Set UI on DOCUMENT_READY
-```cpp
-if (params.cmd == DOCUMENT_READY) {
-    sciter::dom::element root = this->root();
-    root.find_first("#kieu-go").set_value(sciter::value(vInputType));
+    vLanguage = checked ? 0 : 1;
+    APP_SET_DATA(vLanguage, vLanguage);
+    notifyMainProcess();  // Send WM_USER+101 to main
     return true;
 }
 ```
 
-### Handle VALUE_CHANGED
-```cpp
-if (params.cmd == VALUE_CHANGED) {
-    auto id = el.get_attribute("id");
-    if (id == L"kieu-go") {
-        int value = el.get_value().get<int>();
-        vInputType = value;
-        APP_SET_DATA(vInputType, value);
-        notifyMainProcess();
-        return true;
-    }
-}
-```
+### Main Process → Registry Reload (WM_USER+101)
 
-### IPC to Main Process
 ```cpp
-static void notifyMainProcess() {
-    HWND mainWnd = FindWindow(_T("OpenKeyVietnameseInputMethod"), NULL);
-    if (mainWnd) PostMessage(mainWnd, WM_USER + 101, 0, 0);
-}
-
 // In SystemTrayHelper.cpp WndProc:
 case WM_USER+101:
     APP_GET_DATA(vLanguage, 1);
     APP_GET_DATA(vInputType, 0);
     APP_GET_DATA(vCodeTable, 0);
     APP_GET_DATA(vSwitchKeyStatus, 0);
-    APP_GET_DATA(vUseSmartSwitchKey, 0);
     SystemTrayHelper::updateData();  // Refresh tray icon
     break;
 ```
 
-### Bidirectional Sync (Tray → Settings UI)
+### Bidirectional Sync: Main → Settings UI (WM_USER+102)
 
-When settings change from tray menu while Settings UI is open, notify subprocess:
+When tray menu changes settings while Settings UI is open:
 
 ```cpp
 // In SystemTrayHelper.cpp after handling tray menu:
-SystemTrayHelper::updateData();
-
-// Notify settings subprocess to update UI if it's open
 HWND settingsWnd = FindWindow(NULL, _T("OpenKey Settings"));
 if (settingsWnd) {
     PostMessage(settingsWnd, WM_USER + 102, 0, 0);
@@ -204,12 +88,9 @@ Handle in SettingsDialog's SubclassProc:
 
 ```cpp
 if (msg == WM_USER + 102) {
-    // Reload settings from registry
     APP_GET_DATA(vLanguage, 1);
-    APP_GET_DATA(vInputType, 0);
-    APP_GET_DATA(vCodeTable, 0);
+    // ... reload other settings
     
-    // Get dialog instance (passed via SetWindowSubclass dwRefData)
     SettingsDialog* dialog = reinterpret_cast<SettingsDialog*>(dwRefData);
     if (dialog) {
         sciter::dom::element root = dialog->root();
@@ -232,332 +113,15 @@ if (msg == WM_USER + 102) {
 ```
 
 > [!IMPORTANT]
-> Pass `this` pointer to `SetWindowSubclass`: `SetWindowSubclass(hwnd, SubclassProc, 1, (DWORD_PTR)this);`
+> Pass `this` pointer to SubclassProc: `SetWindowSubclass(hwnd, SubclassProc, 1, (DWORD_PTR)this);`
 
-## Blur Effect (Windows 10/11)
+---
 
-### Acrylic Blur Implementation
+## Toggle Switch Pattern
 
-```cpp
-void enableAcrylicEffect() {
-    HWND hwnd = get_hwnd();
-    
-    // 1. CRITICAL: Set WS_EX_LAYERED style first
-    SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-    
-    // 2. Apply Acrylic effect
-    ACCENT_POLICY policy = { 0 };
-    policy.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;  // 4
-    policy.GradientColor = 0x80FFFFFF;  // ABGR: 50% white tint for visible blur
-    
-    WINDOWCOMPOSITIONATTRIBDATA data = { 19, &policy, sizeof(policy) };
-    SetWindowCompositionAttribute(hwnd, &data);
-    
-    // 3. Fix corners on Windows 11
-    DWM_WINDOW_CORNER_PREFERENCE preference = DWMWCP_ROUND;  // 2
-    DwmSetWindowAttribute(hwnd, 33, &preference, sizeof(preference));
-}
-```
+Sciter doesn't support `::before`/`::after` on inputs. Use **div-based toggles with hidden inputs**:
 
-### Blur Not Visible?
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Blur weak | GradientColor opacity too low | Increase alpha: `0x80FFFFFF` (50%) instead of `0x01FFFFFF` (1%) |
-| Blur not showing | CSS container opacity too high | Use `rgba(255,255,255,0.65)` not `0.85` |
-| Gray corners | Container border-radius larger than window | Reduce `border-radius: 8px` or match window DWM corners |
-
-### CSS for Blur Visibility
-
-```css
-html, body {
-    background: transparent;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
-
-.container {
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.65);  /* Semi-transparent for blur */
-    border-radius: 8px;  /* Match DWM corners */
-    overflow: hidden;
-}
-```
-
-
-## Window Dragging
-
-```cpp
-if (msg == WM_NCHITTEST) {
-    LRESULT r = DefSubclassProc(hwnd, msg, wParam, lParam);
-    if (r == HTCLIENT) {
-        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        ScreenToClient(hwnd, &pt);
-        if (pt.y < 50) return HTCAPTION;  // Drag zone
-    }
-    return r;
-}
-```
-
-## Checklist for New Dialog
-
-- [ ] Create `DialogName.h/.cpp` inheriting `sciter::window`
-- [ ] Add `#undef KEY_DOWN/KEY_UP` before includes
-- [ ] Add `sciter::application::hinstance()` implementation
-- [ ] Create `Resources/Sciter/dialogname/` with HTML/CSS
-- [ ] Add `--dialogname` router in `main.cpp`
-- [ ] Add spawn code in `AppDelegate.cpp`
-- [ ] Handle `WM_CLOSE` with `ExitProcess(0)`
-- [ ] For settings: Add IPC (`WM_USER+101`) to reload in main process
-- [ ] Copy `sciter.dll` to output directory
-
-## Sciter CSS/JS Patterns
-
-### ⚠️ CSS Limitations
-
-Sciter's CSS engine differs from standard browsers:
-
-| Feature | Browser | Sciter | Workaround |
-|---------|---------|--------|------------|
-| `::before` on inputs | ✅ Works | ❌ Limited | Use nested `<div>` elements |
-| `::after` on inputs | ✅ Works | ❌ Limited | Use nested `<div>` elements |
-| `inset: 0` shorthand | ✅ Works | ❌ Not supported | Use `top/left/right/bottom: 0` |
-| `gap` in flexbox | ✅ Works | ⚠️ May not work | Use margins between items |
-| Native `<widget type="toggle">` | N/A | ⚠️ Limited styling | Use div-based toggle |
-
-### Toggle Switch Pattern (Recommended)
-
-Since Sciter doesn't support `::before`/`::after` pseudo-elements for creating custom toggles, use **div-based toggles** with JavaScript click handlers.
-
-#### HTML Structure
-```html
-<!-- Toggle container with inner thumb -->
-<div class="toggle-switch" id="my-toggle">
-    <div class="toggle-thumb"></div>
-</div>
-```
-
-#### CSS Styling
-```css
-.toggle-switch {
-    display: inline-block;
-    width: 40px;
-    height: 22px;
-    border-radius: 11px;
-    background-color: #e0e0e0;
-    position: relative;
-    cursor: pointer;
-    vertical-align: middle;  /* Align with text */
-}
-
-.toggle-switch.checked {
-    background-color: #007AFF;
-}
-
-.toggle-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: left 0.2s ease;
-}
-
-.toggle-switch.checked .toggle-thumb {
-    left: 20px;  /* Move thumb to right when checked */
-}
-```
-
-#### JavaScript Click Handler
-```javascript
-// Setup on document ready
-document.on("ready", function() {
-    const toggles = document.$$(".toggle-switch");
-    for (const toggle of toggles) {
-        toggle.on("click", function(evt) {
-            const isChecked = this.classList.contains("checked");
-            if (isChecked) {
-                this.classList.remove("checked");
-            } else {
-                this.classList.add("checked");
-            }
-            // Call C++ handler
-            handleToggleChange(this.id, !isChecked);
-        });
-    }
-});
-```
-
-### Flexbox Alignment Tips
-
-```css
-/* Use explicit flex-flow for reliable layout */
-.setting-row {
-    display: flex;
-    flex-flow: row nowrap;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* Prevent toggle from shrinking */
-.toggle-switch {
-    flex-shrink: 0;
-    min-width: 40px;
-}
-
-/* Let label take remaining space */
-.setting-label {
-    flex: 1;
-}
-```
-
-### Event Handling Patterns
-
-```javascript
-// Dropdown changes
-document.on("change", "select", function(evt, select) {
-    const id = select.id;
-    const value = parseInt(select.value);
-    Window.this.onValueChange(id, value);
-});
-
-// Button clicks
-document.on("click", "button", function(evt, button) {
-    const id = button.id;
-    Window.this.onButtonClick(id);
-});
-
-// Custom div toggle clicks
-document.on("click", ".toggle-switch", function(evt) {
-    // Toggle .checked class and notify
-});
-```
-
-### Setting Initial Values from C++
-
-```javascript
-// Called from C++ to set initial UI state
-function setSettings(language, inputType, freeAccent) {
-    // Set toggle state via classList
-    const toggle = document.getElementById("my-toggle");
-    if (toggle) {
-        if (freeAccent) {
-            toggle.classList.add("checked");
-        } else {
-            toggle.classList.remove("checked");
-        }
-    }
-    
-    // Set dropdown value
-    const dropdown = document.getElementById("kieu-go");
-    if (dropdown) dropdown.value = inputType.toString();
-}
-```
-
-## Troubleshooting
-
-### ⚠️ Elements Not Clickable in Header Area
-
-**Symptom**: Toggle switches, dropdowns, or buttons in the header area cannot be clicked.
-
-**Cause**: The `WM_NCHITTEST` drag zone in C++ is capturing mouse events.
-
-**Solution**: Reduce the drag zone height in the SubclassProc:
-
-```cpp
-// In SettingsDialog.cpp
-if (msg == WM_NCHITTEST) {
-    LRESULT result = DefSubclassProc(hwnd, msg, wParam, lParam);
-    if (result == HTCLIENT) {
-        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        ScreenToClient(hwnd, &pt);
-        
-        // ❌ Too large - blocks header element clicks
-        // if (pt.y < 50) return HTCAPTION;
-        
-        // ✅ Better - only top edge for dragging
-        if (pt.y < 10) return HTCAPTION;
-    }
-    return result;
-}
-```
-
-> [!IMPORTANT]
-> If interactive elements in the header area don't respond to clicks, always check the drag zone height first.
-
-### Flexbox Vertical Alignment Issues
-
-**Symptom**: Elements in a flex row are not vertically aligned.
-
-**Solution**: Use consistent height and line-height:
-
-```css
-.header {
-    display: flex;
-    flex-flow: row nowrap;
-    align-items: center;
-    height: 32px;  /* Fixed height */
-}
-
-.header-element {
-    line-height: 32px;  /* Match parent height */
-    height: 32px;
-    vertical-align: middle;
-    flex-shrink: 0;  /* Prevent shrinking */
-}
-```
-
-### Toggle Clicks Not Working (JS)
-
-**Symptom**: Toggle clicks don't trigger in JavaScript.
-
-**Possible causes**:
-1. **Drag zone** - See "Elements Not Clickable" above
-2. **Event delegation not working** - Use direct onclick instead:
-
-```javascript
-// ❌ May not work in Sciter
-document.on("click", ".toggle-switch", function() { ... });
-
-// ✅ Use querySelectorAll + direct onclick
-document.querySelectorAll(".toggle-switch").forEach(function(toggle) {
-    toggle.onclick = function(evt) {
-        // Handle click
-    };
-});
-```
-
-### CSS `::before` / `::after` Not Working
-
-**Symptom**: Custom toggle styling using pseudo-elements doesn't render.
-
-**Cause**: Sciter has limited support for `::before`/`::after` on form elements.
-
-**Solution**: Use real child `<div>` elements instead:
-
-```html
-<!-- ❌ Won't work in Sciter -->
-<label class="toggle"><input type="checkbox"><span class="slider"></span></label>
-
-<!-- ✅ Works in Sciter -->
-<div class="toggle-switch" id="my-toggle">
-    <div class="toggle-thumb"></div>
-</div>
-```
-
-### Toggle Settings Not Saving to Registry
-
-**Symptom**: Toggle visual state changes but settings are not persisted.
-
-**Cause**: Div-based toggles don't fire `VALUE_CHANGED` events that C++ can catch.
-
-**Solution**: Use hidden input pattern - JS toggles class AND updates hidden input:
-
+### HTML
 ```html
 <div class="toggle-switch" id="my-toggle">
     <div class="toggle-thumb"></div>
@@ -565,93 +129,323 @@ document.querySelectorAll(".toggle-switch").forEach(function(toggle) {
 <input type="hidden" id="val-my-toggle" value="0">
 ```
 
+### CSS
+```css
+.toggle-switch {
+    width: 40px; height: 22px;
+    border-radius: 11px;
+    background-color: #c0c0c0;
+    position: relative;
+    cursor: pointer;
+}
+.toggle-switch.checked { background-color: #007AFF; }
+.toggle-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 2px; left: 2px;
+    transition: left 0.3s;
+}
+.toggle-switch.checked .toggle-thumb { left: 20px; }
+```
+
+### JavaScript
 ```javascript
-toggle.onclick = function(evt) {
-    const isChecked = this.classList.contains("checked");
+toggle.onclick = function() {
     this.classList.toggle("checked");
-    
-    // Update hidden input to fire VALUE_CHANGED
     const hidden = document.getElementById("val-" + this.id);
     if (hidden) {
-        hidden.value = !isChecked ? "1" : "0";
+        hidden.value = this.classList.contains("checked") ? "1" : "0";
         hidden.dispatchEvent(new Event("change", { bubbles: true }));
     }
 };
 ```
 
-Handle in C++:
+---
+
+## Auto-Fit Window to Content
+
+Don't hardcode window height. Measure content after loading:
 
 ```cpp
-if (params.cmd == VALUE_CHANGED) {
-    std::wstring id = el.get_attribute("id");
+// After expand() in constructor:
+sciter::dom::element container = this->root().find_first(".container");
+if (container) {
+    RECT r = container.get_location(CONTENT_BOX);
+    int w = max(r.right - r.left, 350);
+    int h = max(r.bottom - r.top, 200);
+    SetWindowPos(get_hwnd(), NULL, 0, 0, w, h, SWP_NOMOVE | SWP_NOZORDER);
+}
+```
+
+**CSS requirement**:
+```css
+.container { width: 350px; height: auto; }
+```
+
+> [!IMPORTANT]
+> **NEVER DELETE THIS CODE!** The auto-fit pattern is critical for proper window sizing.
+> - CSS MUST use `height: auto`, never hardcode height values
+> - C++ MUST measure container via `get_location(CONTENT_BOX)` for window sizing
+> - When resizing dynamically (e.g., expand/collapse), reuse this same pattern
+
+---
+
+## Blur Effect (Windows 10/11)
+
+```cpp
+void enableAcrylicEffect() {
+    HWND hwnd = get_hwnd();
+    SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
     
-    if (id == L"val-my-toggle") {
-        sciter::value val = el.get_value();
-        std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
-        bool checked = (strVal == L"1");
-        
-        vMySetting = checked ? 1 : 0;
-        APP_SET_DATA(vMySetting, vMySetting);
-        notifyMainProcess();
+    ACCENT_POLICY policy = { 0 };
+    policy.AccentState = 4;  // ACCENT_ENABLE_ACRYLICBLURBEHIND
+    policy.GradientColor = 0x80FFFFFF;  // 50% white (ABGR)
+    
+    WINDOWCOMPOSITIONATTRIBDATA data = { 19, &policy, sizeof(policy) };
+    SetWindowCompositionAttribute(hwnd, &data);
+    
+    // Round corners on Windows 11
+    int preference = 2;  // DWMWCP_ROUND
+    DwmSetWindowAttribute(hwnd, 33, &preference, sizeof(preference));
+}
+```
+
+**CSS for blur visibility**:
+```css
+.container {
+    background: rgba(255, 255, 255, 0.65);  /* Semi-transparent */
+    border-radius: 8px;  /* Match DWM corners */
+}
+```
+
+---
+
+## Button Click Handling
+
+```cpp
+if (params.cmd == BUTTON_CLICK) {
+    sciter::dom::element el(params.heTarget);
+    auto id = el.get_attribute("id");
+    
+    if (id == L"btn-close") {
+        PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
+        return true;
+    }
+    
+    if (id == L"btn-advanced") {
+        openAdvancedSettings();
         return true;
     }
 }
 ```
 
-### Window Size Issues (Content Clipped or Extra Space)
+---
 
-**Symptom**: Content is cut off at bottom, or there's extra gray space around edges.
+## Window Dragging (Reduced Zone)
 
-**Causes & Fixes**:
+```cpp
+if (msg == WM_NCHITTEST) {
+    LRESULT r = DefSubclassProc(hwnd, msg, wParam, lParam);
+    if (r == HTCLIENT) {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        ScreenToClient(hwnd, &pt);
+        if (pt.y < 10) return HTCAPTION;  // Only top 10px for dragging
+    }
+    return r;
+}
+```
+
+---
+
+## Common Issues & Fixes
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| Content cut off | Window height too small | Increase height in constructor: `RECT{0, 0, 350, 410}` |
-| Extra space at bottom | Window height too large | Reduce height to match content |
-| Gray corners | Container `border-radius` larger than DWM corners | Reduce `border-radius: 8px` |
-| Scrollbars appear | Container/body overflow | Add `overflow: hidden` to html, body, .container |
+| Toggles not saving | Div doesn't fire VALUE_CHANGED | Use hidden input pattern |
+| Click not working | `<label>` intercepting | Use `<div>` instead |
+| Gray corners | border-radius too large | Use `8px` |
+| Blur not visible | GradientColor opacity low / CSS too opaque | Use `0x80FFFFFF` / `rgba(255,255,255,0.65)` |
+| Content clipped | Window height too small | Use auto-fit |
+| Flex children collapse | `display:flex` + `height:auto` with children having `height:100%` | Don't use flex for initial layout, OR use fixed height |
+| Button click not working | C++ `handle_event` intercepts before JS | Handle button in C++ directly |
+| SVG captures button clicks | Click target is SVG/path inside button, not button itself | Add `pointer-events: none` to SVG and its children |
+| Extra space at bottom | Window height too large | Use auto-fit |
+| Always on top | SW_POPUP default | Use `HWND_NOTOPMOST` |
+| Scrollbars | Overflow | Add `overflow: hidden` |
+| Header clicks blocked | Drag zone too large | Reduce to 10px |
+| Toggles disappear on layout change | Sciter doesn't repaint absolute positioned elements | Use synchronous force reflow (via offsetHeight) |
+| Clickable div not receiving clicks | Button element has issues with child SVG | Use `<div>` with `setting-row-clickable` class |
+| JS click handler not firing | C++ HYPERLINK_CLICK intercepting | Let JS handle UI, use hidden input VALUE_CHANGED for C++ communication |
+| Layout shift on collapse | Inline-block/flex container width changes during transition | Set fixed width on static sections (e.g. `.compact-section`) |
 
-### `<label>` Elements Blocking Toggle Clicks
+---
 
-**Symptom**: Toggles inside `<label>` elements don't respond to clicks.
+## Expandable Panels
 
-**Cause**: Sciter's `<label>` behavior may interfere with click handling.
+### Architecture
 
-**Solution**: Use `<div>` instead of `<label>` for toggle containers:
+For expandable settings panels, use this pattern:
+
+1. **HTML**: Clickable row + hidden input for C++ communication
+2. **CSS**: Toggle visibility with class selector
+3. **JS**: Handle click, toggle class, dispatch VALUE_CHANGED
+4. **C++**: Only resize window when notified
+
+### HTML Structure
 
 ```html
-<!-- ❌ May block clicks in Sciter -->
-<label class="switch-key-item">
-    <div class="toggle-switch-small" id="key-ctrl">...</div>
-</label>
-
-<!-- ✅ Works -->
-<div class="switch-key-item">
-    <div class="toggle-switch-small" id="key-ctrl">...</div>
+<!-- Clickable row (not button to avoid SVG click issues) -->
+<div class="setting-row setting-row-clickable" id="btn-advanced">
+    <span class="setting-label">Cài đặt nâng cao</span>
+    <svg class="arrow-icon" viewBox="0 0 24 24">
+        <path d="M9 18l6-6-6-6"></path>
+    </svg>
 </div>
+<!-- Hidden input for C++ VALUE_CHANGED -->
+<input type="hidden" id="val-expand-state" value="0">
 ```
 
-### Window Always on Top (Topmost)
+### CSS
 
-**Symptom**: Settings window always stays above other windows.
+```css
+/* Default: collapsed */
+.advanced-section {
+    display: none;
+}
 
-**Cause**: Sciter's `SW_POPUP` flag creates a topmost window by default.
+/* Expanded state */
+.container.expanded {
+    width: 700px;
+    white-space: nowrap;
+}
 
-**Solution**: Explicitly remove topmost after centering:
+.container.expanded .compact-section {
+    display: inline-block;
+    width: 350px;
+    vertical-align: top;
+}
+
+.container.expanded .advanced-section {
+    display: inline-block;
+    width: 350px;
+    vertical-align: top;
+}
+```
+
+### JavaScript (with Synchronous Force Reflow)
+
+```javascript
+function toggleAdvancedSettings() {
+    const container = document.getElementById("main-container");
+    if (container) {
+        const isExpanded = container.classList.contains("expanded");
+        
+        if (isExpanded) {
+            container.classList.remove("expanded");
+        } else {
+            container.classList.add("expanded");
+        }
+        
+        // CRITICAL: Synchronous force reflow on toggle switches
+        // Must be IMMEDIATE (no setTimeout) to minimize visible flash
+        // Sciter doesn't repaint absolute positioned elements after layout change
+        const toggles = document.querySelectorAll(".toggle-switch, .toggle-switch-small");
+        toggles.forEach(function(toggle) {
+            toggle.style.display = "none";
+        });
+        container.offsetHeight; // Force synchronous reflow
+        toggles.forEach(function(toggle) {
+            toggle.style.display = "";
+        });
+        
+        // Notify C++ to resize window
+        const hiddenInput = document.getElementById("val-expand-state");
+        if (hiddenInput) {
+            hiddenInput.value = !isExpanded ? "1" : "0";
+            hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+}
+```
+
+> [!IMPORTANT]
+> **Force reflow timing**: Use synchronous approach (no `setTimeout`) to minimize visible flash. Async approaches (visibility, transform, delayed display) cause noticeable flicker.
+
+### C++ (VALUE_CHANGED handler)
 
 ```cpp
-// Instead of:
-SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-
-// Use:
-SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, 0, 0, SWP_NOSIZE);
+if (id == L"val-expand-state") {
+    sciter::value val = el.get_value();
+    std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+    m_isExpanded = (strVal == L"1");
+    SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 100, NULL);
+    return true;
+}
 ```
 
-### Recommended CSS Values
+---
 
-| Property | Recommended Value | Why |
-|----------|-------------------|-----|
-| Container `border-radius` | `8px` | Matches DWM corners, prevents gray clipping |
-| Container `background` | `rgba(255,255,255,0.65)` | Semi-transparent for blur visibility |
-| Container `overflow` | `hidden` | Prevents scrollbars |
-| Body `overflow` | `hidden` | Prevents scrollbars |
+## Debugging
+
+### OutputDebugString + DebugView
+
+Use `OutputDebugStringW` for logging, view with [DebugView](https://learn.microsoft.com/en-us/sysinternals/downloads/debugview):
+
+```cpp
+// Log all events with target info
+wchar_t debugMsg[512];
+swprintf_s(debugMsg, L"OpenKey: event cmd=%d target=[%S#%s.%s]\n", 
+    params.cmd, 
+    el.get_tag().c_str(),
+    id.c_str(),
+    className.c_str());
+OutputDebugStringW(debugMsg);
+```
+
+**DebugView setup:**
+1. Run as Administrator
+2. Enable Capture → Capture Win32 (Ctrl+W)
+3. Filter: `OpenKey:*`
+
+### Sciter Inspector
+
+Enable debug mode in window creation:
+
+```cpp
+: sciter::window(SW_POPUP | SW_ALPHA | SW_ENABLE_DEBUG, RECT{0, 0, 350, 380})
+```
+
+Then run `inspector.exe` from [Sciter SDK](https://sciter.com/download/) to inspect live DOM.
+
+---
+
+## SVG Icons
+
+**Filled icons**: `fill="currentColor"` or `fill="#EB2121"`
+**Stroke icons**: `fill="none" stroke="currentColor" stroke-width="1.5"`
+
+```html
+<!-- Close button with red X -->
+<button class="btn-close" id="btn-close">
+    <svg viewBox="0 0 24 24" fill="#EB2121">
+        <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715..."/>
+    </svg>
+</button>
+```
+
+---
+
+## Checklist for New Dialog
+
+- [ ] Create `DialogName.h/.cpp` inheriting `sciter::window`
+- [ ] Add `#undef KEY_DOWN/KEY_UP` before includes
+- [ ] Add `sciter::application::hinstance()` implementation
+- [ ] Create `Resources/Sciter/dialogname/` with HTML/CSS/JS
+- [ ] Add `--dialogname` router in `main.cpp`
+- [ ] Add spawn code in `AppDelegate.cpp`
+- [ ] Handle `WM_CLOSE` with `ExitProcess(0)`
+- [ ] Use auto-fit for window sizing
+- [ ] For settings: Add IPC (`WM_USER+101/102`) for sync
+- [ ] Copy `sciter.dll` to output directory

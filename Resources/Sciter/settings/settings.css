@@ -20,13 +20,76 @@ body {
 
 /* Main Container with glass effect */
 .container {
-    width: 100%;
-    height: 100%;
+    width: 350px;
+    height: auto;
     padding: 16px;
     background: rgba(255, 255, 255, 0.65);
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    transition: width 0.3s ease;
+}
+
+/* Compact Section (Left Panel - always visible) */
+.compact-section {
+    display: block;
+    width: 318px;
+    /* Fixed width = container width (350) - padding (16*2) */
+}
+
+/* Force GPU repaint without visible change */
+.compact-section.repainting {
+    transform: translateZ(0);
+}
+
+/* Advanced Section (Right Panel - hidden by default) */
+.advanced-section {
+    display: none;
+    width: 400px;
+    padding: 16px;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Expanded state - use inline-block layout (more compatible with Sciter) */
+.container.expanded {
+    width: 750px;
+    padding: 0;
+    white-space: nowrap;
+}
+
+.container.expanded .compact-section {
+    display: inline-block;
+    width: 350px;
+    padding: 16px;
+    vertical-align: top;
+    white-space: normal;
+    box-sizing: border-box;
+}
+
+.container.expanded .advanced-section {
+    display: inline-flex;
+    flex-direction: column;
+    width: 400px;
+    vertical-align: top;
+    white-space: normal;
+    box-sizing: border-box;
+}
+
+/* Arrow rotation when expanded */
+.container.expanded #arrow-icon {
+    transform: rotate(180deg);
+}
+
+#arrow-icon {
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    /* Let button capture clicks, not SVG */
+}
+
+/* SVG inside buttons should not capture clicks */
+.btn-advanced svg,
+.btn-advanced svg * {
+    pointer-events: none;
 }
 
 /* Header - single row with all elements */
@@ -97,11 +160,13 @@ body {
     left: 25px;
 }
 
-/* Small Toggle for settings rows */
+/* Small Toggle for settings rows - ensure visibility in all layouts */
 .toggle-switch-small {
-    display: inline-block;
+    display: inline-block !important;
     width: 40px;
+    min-width: 40px;
     height: 22px;
+    min-height: 22px;
     border-radius: 11px;
     background-color: #c0c0c0;
     position: relative;
@@ -282,16 +347,35 @@ body {
     min-width: 120px;
 }
 
-/* Advanced Settings Button */
-.btn-advanced {
-    display: inline-block;
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: transparent;
+/* Advanced Settings Row - entire row is clickable */
+.setting-row-clickable {
     cursor: pointer;
-    padding: 4px;
-    color: #666;
+    user-select: none;
+    transition: color 0.2s ease;
+    outline: none;
+}
+
+.setting-row-clickable:hover .setting-label {
+    color: #007AFF;
+}
+
+.setting-row-clickable:hover .arrow-icon {
+    stroke: #007AFF;
+}
+
+/* Arrow icon in clickable row */
+.arrow-icon {
+    width: 20px;
+    height: 20px;
+    stroke: #666;
+    stroke-width: 2px;
+    fill: none;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+}
+
+.setting-row-clickable:hover .arrow-icon {
+    stroke: #007AFF;
 }
 
 .btn-advanced:hover {
@@ -309,4 +393,129 @@ body {
 /* Hide hidden inputs */
 input[type="hidden"] {
     display: none;
+}
+
+/* ============================================
+   ADVANCED SECTION - HORIZONTAL TABS LAYOUT
+   ============================================ */
+
+/* Tab Header (horizontal tabs at top) */
+.tab-header {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.tab-item {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+}
+
+.tab-item:hover {
+    background: rgba(0, 122, 255, 0.08);
+    color: #007AFF;
+}
+
+.tab-item.active {
+    color: #007AFF;
+    border-bottom-color: #007AFF;
+    background: transparent;
+}
+
+/* Tab Content Area (below tabs) */
+.tab-content {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Tab Panels */
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+.tab-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.tab-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Reuse setting-row styles in advanced section */
+.advanced-section .setting-row {
+    padding: 6px 0;
+}
+
+/* Placeholder for macro list */
+.macro-list-placeholder {
+    padding: 20px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.placeholder-text {
+    font-size: 12px;
+    color: #999;
+}
+
+/* About content styles */
+.about-content {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.app-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #007AFF;
+    margin-bottom: 8px;
+}
+
+.app-version {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.app-author {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 12px;
+}
+
+.app-link {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #007AFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.app-link:hover {
+    background: #0056b3;
 }

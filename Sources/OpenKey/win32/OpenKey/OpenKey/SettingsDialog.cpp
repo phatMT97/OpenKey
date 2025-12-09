@@ -23,6 +23,8 @@ redistribute your new version, it MUST be open source.
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "comctl32.lib")
 
+#define TIMER_RESIZE_WINDOW 1001
+
 SettingsDialog::SettingsDialog()
 	: sciter::window(SW_POPUP | SW_ALPHA | SW_ENABLE_DEBUG, RECT{0, 0, 350, 380}) {
 	
@@ -50,14 +52,28 @@ SettingsDialog::SettingsDialog()
 	// Show the window
 	expand();
 	
-	// Enable Acrylic blur effect
-	enableAcrylicEffect();
-	
 	// Subclass window for dragging and close
 	SetWindowSubclass(get_hwnd(), SettingsDialog::SubclassProc, 1, (DWORD_PTR)this);
 	
 	// Set window title for anti-spam detection
 	SetWindowTextW(get_hwnd(), L"OpenKey Settings");
+	
+	// Auto-fit window to content size from HTML
+	sciter::dom::element rootEl = this->root();
+	sciter::dom::element container = rootEl.find_first(".container");
+	if (container) {
+		// get_location returns RECT, takes ELEMENT_AREAS flag
+		RECT contentRect = container.get_location(CONTENT_BOX);
+		int contentWidth = contentRect.right - contentRect.left;
+		int contentHeight = contentRect.bottom - contentRect.top;
+		
+		// Add small padding for window chrome
+		contentWidth = max(contentWidth, 350);
+		contentHeight = max(contentHeight, 200);
+		
+		// Resize window to fit content
+		SetWindowPos(get_hwnd(), NULL, 0, 0, contentWidth, contentHeight, SWP_NOMOVE | SWP_NOZORDER);
+	}
 	
 	// Center window on screen
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -69,6 +85,9 @@ SettingsDialog::SettingsDialog()
 	int x = (screenWidth - winWidth) / 2;
 	int y = (screenHeight - winHeight) / 2;
 	SetWindowPos(get_hwnd(), HWND_NOTOPMOST, x, y, 0, 0, SWP_NOSIZE);  // Remove topmost
+	
+	// Enable Acrylic blur effect (after resize)
+	enableAcrylicEffect();
 	
 	// Load settings from registry
 	loadSettings();
@@ -250,6 +269,16 @@ LRESULT CALLBACK SettingsDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam
 		return 0;
 	}
 	
+	// Handle timer for window resize after animation
+	if (msg == WM_TIMER && wParam == TIMER_RESIZE_WINDOW) {
+		KillTimer(hwnd, TIMER_RESIZE_WINDOW);
+		SettingsDialog* dialog = reinterpret_cast<SettingsDialog*>(dwRefData);
+		if (dialog) {
+			dialog->recalcWindowSize();
+		}
+		return 0;
+	}
+	
 	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
@@ -276,9 +305,18 @@ static void notifyMainProcess() {
 }
 
 bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
-	// Debug: Log all events
-	wchar_t debugMsg[256];
-	swprintf_s(debugMsg, L"OpenKey: handle_event cmd=%d\n", params.cmd);
+	// Debug: Log all events with target info for click events
+	sciter::dom::element targetEl(params.heTarget);
+	std::wstring targetId = targetEl.get_attribute("id");
+	std::wstring targetClass = targetEl.get_attribute("class");
+	std::string targetTag = targetEl.get_tag();
+	
+	wchar_t debugMsg[512];
+	swprintf_s(debugMsg, L"OpenKey: event cmd=%d target=[%S#%s.%s]\n", 
+		params.cmd, 
+		targetTag.c_str(),
+		targetId.c_str(),
+		targetClass.c_str());
 	OutputDebugStringW(debugMsg);
 	
 	if (sciter::window::handle_event(he, params))
@@ -360,10 +398,47 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 	// Handle button clicks
 	if (params.cmd == BUTTON_CLICK) {
 		sciter::dom::element el(params.heTarget);
-		auto id = el.get_attribute("id");
+		std::wstring id = el.get_attribute("id");
+		std::wstring className = el.get_attribute("class");
+		std::string tagName = el.get_tag();
 		
-		if (id == L"btn-advanced" || id == L"more-settings") {
-			openAdvancedSettings();
+		// DEBUG: Log ALL button clicks to diagnose issue
+		wchar_t debugMsg[512];
+		swprintf_s(debugMsg, L"OpenKey: BUTTON_CLICK - id='%s' class='%s' tag='%S'\n", 
+			id.empty() ? L"(empty)" : id.c_str(), 
+			className.empty() ? L"(empty)" : className.c_str(),
+			tagName.empty() ? "(empty)" : tagName.c_str());
+		OutputDebugStringW(debugMsg);
+		
+		if (id == L"btn-close") {
+			// Close the window
+			PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
+			return true;
+		}
+		
+		// Handle advanced settings button - toggle expansion
+		if (id == L"btn-advanced") {
+			OutputDebugStringW(L"OpenKey: btn-advanced MATCHED!\n");
+			
+			// Toggle expanded class on container via JavaScript
+			sciter::dom::element root = this->root();
+			sciter::dom::element container = root.find_first("#main-container");
+			if (container) {
+				std::wstring currentClass = container.get_attribute("class");
+				if (currentClass.find(L"expanded") != std::wstring::npos) {
+					// Remove expanded
+					container.set_attribute("class", L"container");
+					m_isExpanded = false;
+					OutputDebugStringW(L"OpenKey: Collapsing panel\n");
+				} else {
+					// Add expanded
+					container.set_attribute("class", L"container expanded");
+					m_isExpanded = true;
+					OutputDebugStringW(L"OpenKey: Expanding panel\n");
+				}
+				// Resize window after CSS applies
+				SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 50, NULL);
+			}
 			return true;
 		}
 	}
@@ -477,13 +552,48 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			notifyMainProcess();
 			return true;
 		}
+		else if (id == L"val-expand-state") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			bool expanded = (strVal == L"1");
+			OutputDebugStringW(expanded ? L"OpenKey: val-expand-state = EXPANDED\n" : L"OpenKey: val-expand-state = COLLAPSED\n");
+			m_isExpanded = expanded;
+			// Set timer to resize window after CSS transition (300ms + 50ms buffer)
+			SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 350, NULL);
+			return true;
+		}
 	}
 	
-	// Handle HYPERLINK_CLICK events for toggle switches (custom div-based toggles)
+	// Handle HYPERLINK_CLICK events for toggle switches AND clickable divs
 	// Note: JavaScript already toggles the 'checked' class, we just need to detect the change
 	if (params.cmd == HYPERLINK_CLICK || params.cmd == BUTTON_CLICK) {
 		sciter::dom::element el(params.heTarget);
+		std::wstring elId = el.get_attribute("id");
 		std::wstring className = el.get_attribute("class");
+		
+		// Check for btn-advanced clickable row (or its children)
+		if (elId == L"btn-advanced" || className.find(L"setting-row-clickable") != std::wstring::npos) {
+			OutputDebugStringW(L"OpenKey: btn-advanced clicked - toggling via hidden input\n");
+			
+			// Find hidden input and toggle its value - JS will handle UI changes via CSS
+			sciter::dom::element root = this->root();
+			sciter::dom::element checkbox = root.find_first("#expand-checkbox");
+			
+			if (checkbox) {
+				// Toggle checked state
+				bool isChecked = checkbox.get_state(STATE_CHECKED) != 0;
+				checkbox.set_state(isChecked ? 0 : STATE_CHECKED, STATE_CHECKED);
+				m_isExpanded = !isChecked;
+				
+				OutputDebugStringW(m_isExpanded ? L"OpenKey: Checkbox now CHECKED (expand)\n" : L"OpenKey: Checkbox now UNCHECKED (collapse)\n");
+				
+				// Resize window after CSS transition
+				SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 100, NULL);
+			} else {
+				OutputDebugStringW(L"OpenKey: ERROR - expand-checkbox not found!\n");
+			}
+			return true;
+		}
 		
 		// Check if this is a toggle element (has toggle-switch or toggle-switch-small class)
 		bool isToggle = (!className.empty() && (
@@ -651,9 +761,48 @@ void SettingsDialog::onOpenAdvancedSettings() {
 }
 
 void SettingsDialog::openAdvancedSettings() {
-	// Launch the old MainControlDialog from main process
-	// For now, just close this subprocess
-	// TODO: Send message to main process to open advanced settings
-	ExitProcess(0);
+	// Toggle expansion state - handled by JavaScript
+	// Just call the JS function if we need to programmatically toggle
+	OutputDebugStringW(L"OpenKey: openAdvancedSettings called\n");
+}
+
+void SettingsDialog::onExpandChange(bool isExpanded) {
+	wchar_t msg[128];
+	swprintf_s(msg, L"OpenKey: onExpandChange called, isExpanded=%d\n", isExpanded);
+	OutputDebugStringW(msg);
+	
+	m_isExpanded = isExpanded;
+	
+	// Set timer to resize window after CSS transition (300ms + 50ms buffer)
+	SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 350, NULL);
+}
+
+void SettingsDialog::recalcWindowSize() {
+	OutputDebugStringW(L"OpenKey: recalcWindowSize called\n");
+	
+	// Get current window position
+	RECT rc;
+	GetWindowRect(get_hwnd(), &rc);
+	int x = rc.left;
+	int y = rc.top;
+	
+	// Auto-fit: measure container size from HTML/CSS (per sciter-integration-guide.md)
+	sciter::dom::element rootEl = this->root();
+	sciter::dom::element container = rootEl.find_first(".container");
+	int newWidth = 350;
+	int newHeight = 200;
+	
+	if (container) {
+		RECT contentRect = container.get_location(CONTENT_BOX);
+		newWidth = max(contentRect.right - contentRect.left, 350);
+		newHeight = max(contentRect.bottom - contentRect.top, 200);
+	}
+	
+	// Resize window
+	SetWindowPos(get_hwnd(), NULL, x, y, newWidth, newHeight, SWP_NOZORDER);
+	
+	wchar_t sizeMsg[128];
+	swprintf_s(sizeMsg, L"OpenKey: Window resized to %dx%d (auto-fit)\n", newWidth, newHeight);
+	OutputDebugStringW(sizeMsg);
 }
 

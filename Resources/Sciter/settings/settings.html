@@ -10,116 +10,210 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header: V - toggle - E - dropdown - settings button -->
-        <div class="header">
-            <span class="lang-label" id="lang-v">V</span>
-            <!-- Div-based toggle for proper Sciter styling -->
-            <div class="toggle-switch" id="toggle-language">
-                <div class="toggle-thumb"></div>
-            </div>
-            <!-- Hidden input to fire VALUE_CHANGED -->
-            <input type="hidden" id="val-toggle-language" value="0">
-            <span class="lang-label" id="lang-e">E</span>
+    <!-- Hidden checkbox for expand/collapse state - CSS uses :checked selector -->
+    <input type="checkbox" id="expand-checkbox" style="display:none;">
 
-            <select class="input-type-dropdown" id="input-type">
-                <option value="0">Telex</option>
-                <option value="1">VNI</option>
-                <option value="2">Simple Telex 1</option>
-                <option value="3">Simple Telex 2</option>
-            </select>
+    <div class="container" id="main-container">
+        <!-- Compact Section (Left Panel) -->
+        <div class="compact-section">
+            <!-- Header: V - toggle - E - dropdown - settings button -->
+            <div class="header">
+                <span class="lang-label" id="lang-v">V</span>
+                <!-- Div-based toggle for proper Sciter styling -->
+                <div class="toggle-switch" id="toggle-language">
+                    <div class="toggle-thumb"></div>
+                </div>
+                <!-- Hidden input to fire VALUE_CHANGED -->
+                <input type="hidden" id="val-toggle-language" value="0">
+                <span class="lang-label" id="lang-e">E</span>
 
-            <button class="btn-settings" id="more-settings" title="Cài đặt nâng cao">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.64-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Settings Card -->
-        <div class="settings-card">
-            <!-- 1. Bảng mã (Code Table) -->
-            <div class="setting-row">
-                <span class="setting-label">Bảng mã</span>
-                <select class="setting-dropdown" id="bang-ma">
-                    <option value="0">Unicode</option>
-                    <option value="1">TCVN3 (ABC)</option>
-                    <option value="2">VNI Windows</option>
-                    <option value="3">Unicode Compound</option>
-                    <option value="4">Vietnamese Locale</option>
+                <select class="input-type-dropdown" id="input-type">
+                    <option value="0">Telex</option>
+                    <option value="1">VNI</option>
+                    <option value="2">Simple Telex 1</option>
+                    <option value="3">Simple Telex 2</option>
                 </select>
-            </div>
 
-            <!-- 2. Phím Chuyển (Switch Key) - 2 rows layout -->
-            <div class="setting-row setting-row-vertical">
-                <span class="setting-label">Phím Chuyển</span>
-                <div class="switch-key-container">
-                    <!-- Row 1: Ctrl Alt -->
-                    <div class="switch-key-row">
-                        <div class="switch-key-item">
-                            <span class="switch-key-label">Ctrl</span>
-                            <div class="toggle-switch-small" id="key-ctrl">
-                                <div class="toggle-thumb-small"></div>
-                            </div>
-                            <input type="hidden" id="val-key-ctrl" value="0">
-                        </div>
-                        <div class="switch-key-item">
-                            <span class="switch-key-label">Alt</span>
-                            <div class="toggle-switch-small" id="key-alt">
-                                <div class="toggle-thumb-small"></div>
-                            </div>
-                            <input type="hidden" id="val-key-alt" value="0">
-                        </div>
-                    </div>
-                    <!-- Row 2: Win Shift + textbox -->
-                    <div class="switch-key-row">
-                        <div class="switch-key-item">
-                            <span class="switch-key-label">Win</span>
-                            <div class="toggle-switch-small" id="key-win">
-                                <div class="toggle-thumb-small"></div>
-                            </div>
-                            <input type="hidden" id="val-key-win" value="0">
-                        </div>
-                        <div class="switch-key-item">
-                            <span class="switch-key-label">Shift</span>
-                            <div class="toggle-switch-small" id="key-shift">
-                                <div class="toggle-thumb-small"></div>
-                            </div>
-                            <input type="hidden" id="val-key-shift" value="0">
-                        </div>
-                        <input type="text" class="switch-key-input" id="switch-key-char" maxlength="1" placeholder="~"
-                            title="Phím chuyển">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Kêu Beep -->
-            <div class="setting-row">
-                <span class="setting-label">Kêu Beep</span>
-                <div class="toggle-switch-small" id="beep-sound">
-                    <div class="toggle-thumb-small"></div>
-                </div>
-                <input type="hidden" id="val-beep-sound" value="0">
-            </div>
-
-            <!-- 4. Loại trừ ứng dụng thông minh -->
-            <div class="setting-row">
-                <span class="setting-label">Loại trừ ứng dụng thông minh</span>
-                <div class="toggle-switch-small" id="smart-switch">
-                    <div class="toggle-thumb-small"></div>
-                </div>
-                <input type="hidden" id="val-smart-switch" value="0">
-            </div>
-
-            <!-- 5. Cài đặt nâng cao -->
-            <div class="setting-row">
-                <span class="setting-label">Cài đặt nâng cao</span>
-                <button class="btn-advanced" id="btn-advanced">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 18l6-6-6-6"></path>
+                <button class="btn-settings" id="btn-close" title="Đóng">
+                    <svg viewBox="0 0 24 24" fill="#EB2121">
+                        <path
+                            d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z" />
                     </svg>
                 </button>
+            </div>
+
+            <!-- Settings Card -->
+            <div class="settings-card">
+                <!-- 1. Bảng mã (Code Table) -->
+                <div class="setting-row">
+                    <span class="setting-label">Bảng mã</span>
+                    <select class="setting-dropdown" id="bang-ma">
+                        <option value="0">Unicode</option>
+                        <option value="1">TCVN3 (ABC)</option>
+                        <option value="2">VNI Windows</option>
+                        <option value="3">Unicode Compound</option>
+                        <option value="4">Vietnamese Locale</option>
+                    </select>
+                </div>
+
+                <!-- 2. Phím Chuyển (Switch Key) - 2 rows layout -->
+                <div class="setting-row setting-row-vertical">
+                    <span class="setting-label">Phím Chuyển</span>
+                    <div class="switch-key-container">
+                        <!-- Row 1: Ctrl Alt -->
+                        <div class="switch-key-row">
+                            <div class="switch-key-item">
+                                <span class="switch-key-label">Ctrl</span>
+                                <div class="toggle-switch-small" id="key-ctrl">
+                                    <div class="toggle-thumb-small"></div>
+                                </div>
+                                <input type="hidden" id="val-key-ctrl" value="0">
+                            </div>
+                            <div class="switch-key-item">
+                                <span class="switch-key-label">Alt</span>
+                                <div class="toggle-switch-small" id="key-alt">
+                                    <div class="toggle-thumb-small"></div>
+                                </div>
+                                <input type="hidden" id="val-key-alt" value="0">
+                            </div>
+                        </div>
+                        <!-- Row 2: Win Shift + textbox -->
+                        <div class="switch-key-row">
+                            <div class="switch-key-item">
+                                <span class="switch-key-label">Win</span>
+                                <div class="toggle-switch-small" id="key-win">
+                                    <div class="toggle-thumb-small"></div>
+                                </div>
+                                <input type="hidden" id="val-key-win" value="0">
+                            </div>
+                            <div class="switch-key-item">
+                                <span class="switch-key-label">Shift</span>
+                                <div class="toggle-switch-small" id="key-shift">
+                                    <div class="toggle-thumb-small"></div>
+                                </div>
+                                <input type="hidden" id="val-key-shift" value="0">
+                            </div>
+                            <input type="text" class="switch-key-input" id="switch-key-char" maxlength="1"
+                                placeholder="~" title="Phím chuyển">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Kêu Beep -->
+                <div class="setting-row">
+                    <span class="setting-label">Kêu Beep</span>
+                    <div class="toggle-switch-small" id="beep-sound">
+                        <div class="toggle-thumb-small"></div>
+                    </div>
+                    <input type="hidden" id="val-beep-sound" value="0">
+                </div>
+
+                <!-- 4. Loại trừ ứng dụng thông minh -->
+                <div class="setting-row">
+                    <span class="setting-label">Loại trừ ứng dụng thông minh</span>
+                    <div class="toggle-switch-small" id="smart-switch">
+                        <div class="toggle-thumb-small"></div>
+                    </div>
+                    <input type="hidden" id="val-smart-switch" value="0">
+                </div>
+
+                <!-- 5. Cài đặt nâng cao - clickable row -->
+                <div class="setting-row setting-row-clickable" id="btn-advanced">
+                    <span class="setting-label">Cài đặt nâng cao</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="arrow-icon"
+                        class="arrow-icon">
+                        <path d="M9 18l6-6-6-6"></path>
+                    </svg>
+                </div>
+                <!-- Hidden input for expand state (for C++ VALUE_CHANGED handler) -->
+                <input type="hidden" id="val-expand-state" value="0">
+            </div>
+        </div>
+
+        <!-- Advanced Section (Right Panel - hidden by default) -->
+        <div class="advanced-section" id="advanced-section">
+            <!-- Tab Header (horizontal tabs at top) -->
+            <div class="tab-header">
+                <div class="tab-item active" data-tab="1">Bộ gõ</div>
+                <div class="tab-item" data-tab="2">Gõ tắt</div>
+                <div class="tab-item" data-tab="3">Hệ thống</div>
+                <div class="tab-item" data-tab="4">Thông tin</div>
+            </div>
+
+            <!-- Tab Content Area (below tabs) -->
+            <div class="tab-content" id="tab-content">
+                <!-- Tab 1: Bộ gõ (Input Method) - Default active -->
+                <div class="tab-panel active" id="tab-panel-1">
+                    <div class="tab-body">
+                        <div class="setting-row">
+                            <span class="setting-label">Kiểm tra chính tả</span>
+                            <div class="toggle-switch-small" id="spell-check">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-spell-check" value="0">
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Tự động khôi phục phím</span>
+                            <div class="toggle-switch-small" id="auto-restore">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-auto-restore" value="0">
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Bỏ dấu kiểu cũ</span>
+                            <div class="toggle-switch-small" id="old-style">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-old-style" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Gõ tắt (Shortcuts/Macro) -->
+                <div class="tab-panel" id="tab-panel-2">
+                    <div class="tab-body">
+                        <div class="setting-row">
+                            <span class="setting-label">Sử dụng gõ tắt</span>
+                            <div class="toggle-switch-small" id="use-macro">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-use-macro" value="0">
+                        </div>
+                        <div class="macro-list-placeholder">
+                            <p class="placeholder-text">Danh sách gõ tắt sẽ hiển thị ở đây</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Hệ thống (System) -->
+                <div class="tab-panel" id="tab-panel-3">
+                    <div class="tab-body">
+                        <div class="setting-row">
+                            <span class="setting-label">Khởi động cùng Windows</span>
+                            <div class="toggle-switch-small" id="run-startup">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-run-startup" value="0">
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Hiện icon trên Taskbar</span>
+                            <div class="toggle-switch-small" id="show-tray">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-show-tray" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Thông tin (About) -->
+                <div class="tab-panel" id="tab-panel-4">
+                    <div class="tab-body about-content">
+                        <p class="app-name">OpenKey</p>
+                        <p class="app-version">Phiên bản 2.0</p>
+                        <p class="app-author">Tác giả: Mai Vũ Tuyên</p>
+                        <a class="app-link" href="https://github.com/phatMT97/OpenKey">GitHub</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

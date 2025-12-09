@@ -50,6 +50,7 @@ public:
 	void onBeepChange(bool enabled);
 	void onSmartSwitchChange(bool enabled);
 	void onOpenAdvancedSettings();
+	void onExpandChange(bool isExpanded);
 	
 	// SOM passport for JavaScript binding
 	SOM_PASSPORT_BEGIN(SettingsDialog)
@@ -64,7 +65,8 @@ public:
 			SOM_FUNC(onSwitchKeyCharChange),
 			SOM_FUNC(onBeepChange),
 			SOM_FUNC(onSmartSwitchChange),
-			SOM_FUNC(onOpenAdvancedSettings)
+			SOM_FUNC(onOpenAdvancedSettings),
+			SOM_FUNC(onExpandChange)
 		)
 	SOM_PASSPORT_END
 
@@ -80,6 +82,12 @@ private:
 	
 	// Open advanced settings dialog
 	void openAdvancedSettings();
+	
+	// Resize window after expand/collapse animation
+	void recalcWindowSize();
+	
+	// Track expanded state
+	bool m_isExpanded = false;
 	
 	// Subclass procedure for WM_NCHITTEST (window dragging) and WM_CLOSE
 	static LRESULT CALLBACK SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
