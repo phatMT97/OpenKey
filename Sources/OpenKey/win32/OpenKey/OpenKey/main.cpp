@@ -15,6 +15,7 @@ redistribute your new version, it MUST be open source.
 #include "AppDelegate.h"
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
+#include "MacroDialogSciter.h"
 #include <Shlobj.h>
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -42,6 +43,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Check if we're running as Settings UI subprocess
 	if (lpCmdLine && wcsstr(lpCmdLine, L"--settings")) {
 		SettingsDialog dialog;
+		MSG msg;
+		while (GetMessage(&msg, NULL, 0, 0)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		return 0;
+	}
+	
+	// Check if we're running as Macro Table UI subprocess
+	if (lpCmdLine && wcsstr(lpCmdLine, L"--macro")) {
+		// Enable Inspector for debugging
+		SciterSetOption(NULL, SCITER_SET_DEBUG_MODE, TRUE);
+		// Enable socket I/O for Inspector connection (Ctrl+Shift+I)
+		SciterSetOption(NULL, SCITER_SET_SCRIPT_RUNTIME_FEATURES,
+			ALLOW_FILE_IO |
+			ALLOW_SOCKET_IO |
+			ALLOW_EVAL |
+			ALLOW_SYSINFO);
+		
+		MacroDialogSciter dialog;
+		dialog.show();
 		MSG msg;
 		while (GetMessage(&msg, NULL, 0, 0)) {
 			TranslateMessage(&msg);

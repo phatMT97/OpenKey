@@ -35,6 +35,25 @@ SettingsDialog::SettingsDialog()
 	APP_GET_DATA(vSwitchKeyStatus, 0);   // Default: no modifier keys
 	APP_GET_DATA(vUseSmartSwitchKey, 0); // Default: disabled
 	
+	// Bộ gõ tab settings
+	APP_GET_DATA(vUseModernOrthography, 0);   // Đặt dấu oà, uý
+	APP_GET_DATA(vFixRecommendBrowser, 1);    // Sửa lỗi gợi ý (trình duyệt, Excel)
+	APP_GET_DATA(vUpperCaseFirstChar, 0);     // Viết hoa chữ cái đầu câu
+	APP_GET_DATA(vRememberCode, 0);           // Tự ghi nhớ bảng mã
+	APP_GET_DATA(vCheckSpelling, 1);          // Kiểm tra chính tả
+	APP_GET_DATA(vRestoreIfWrongSpelling, 1); // Tự khôi phục phím với từ sai
+	APP_GET_DATA(vAllowConsonantZFWJ, 0);     // Cho phép z w j f làm phụ âm đầu
+	APP_GET_DATA(vTempOffSpelling, 0);        // Tạm tắt chính tả bằng Ctrl
+	APP_GET_DATA(vTempOffOpenKey, 0);         // Tạm tắt OpenKey bằng Alt
+	
+	// Gõ tắt tab settings
+	APP_GET_DATA(vUseMacro, 1);               // Cho phép gõ tắt
+	APP_GET_DATA(vUseMacroInEnglishMode, 0);  // Gõ tắt cả khi tắt tiếng Việt
+	APP_GET_DATA(vAutoCapsMacro, 0);          // Tự động viết hoa theo phím tắt
+	APP_GET_DATA(vQuickTelex, 0);             // Gõ nhanh (cc=ch, gg=gi,...)
+	APP_GET_DATA(vQuickStartConsonant, 0);    // Gõ tắt phụ âm đầu
+	APP_GET_DATA(vQuickEndConsonant, 0);      // Gõ tắt phụ âm cuối
+	
 	// Load HTML file
 	WCHAR exePath[MAX_PATH];
 	GetModuleFileNameW(NULL, exePath, MAX_PATH);
@@ -184,9 +203,13 @@ LRESULT CALLBACK SettingsDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam
 			POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			ScreenToClient(hwnd, &pt);
 			
-			// Drag zone: only very top edge (10px) to allow clicks on header elements
-			// User can still drag by clicking the very top edge
-			if (pt.y < 10) {
+			// Drag zone: title bar height (36px) for easy dragging
+			// Exclude close button area (last 40px on right side)
+			RECT winRect;
+			GetClientRect(hwnd, &winRect);
+			int closeButtonZone = winRect.right - 40;
+			
+			if (pt.y < 36 && pt.x < closeButtonZone) {
 				return HTCAPTION;
 			}
 		}
@@ -392,6 +415,33 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			else smartSwitch.set_attribute("class", L"toggle-switch-small");
 		}
 		
+		// === Bộ gõ tab toggles ===
+		auto setToggleState = [&root](const char* selector, int value) {
+			sciter::dom::element el = root.find_first(selector);
+			if (el) {
+				if (value) el.set_attribute("class", L"toggle-switch-small checked");
+				else el.set_attribute("class", L"toggle-switch-small");
+			}
+		};
+		
+		setToggleState("#modern-ortho", vUseModernOrthography);
+		setToggleState("#fix-recommend", vFixRecommendBrowser);
+		setToggleState("#auto-caps", vUpperCaseFirstChar);
+		setToggleState("#remember-code", vRememberCode);
+		setToggleState("#spell-check", vCheckSpelling);
+		setToggleState("#restore-key", vRestoreIfWrongSpelling);
+		setToggleState("#allow-zwjf", vAllowConsonantZFWJ);
+		setToggleState("#temp-off-spell", vTempOffSpelling);
+		setToggleState("#temp-off-openkey", vTempOffOpenKey);
+		
+		// Gõ tắt tab toggles
+		setToggleState("#use-macro", vUseMacro);
+		setToggleState("#macro-english", vUseMacroInEnglishMode);
+		setToggleState("#auto-caps-macro", vAutoCapsMacro);
+		setToggleState("#quick-telex", vQuickTelex);
+		setToggleState("#quick-start", vQuickStartConsonant);
+		setToggleState("#quick-end", vQuickEndConsonant);
+		
 		return true;
 	}
 	
@@ -413,6 +463,24 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		if (id == L"btn-close") {
 			// Close the window
 			PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
+			return true;
+		}
+		
+		if (id == L"btn-macro-table") {
+			// Spawn macro table subprocess directly
+			WCHAR exePath[MAX_PATH];
+			GetModuleFileNameW(NULL, exePath, MAX_PATH);
+			
+			STARTUPINFOW si = { sizeof(si) };
+			PROCESS_INFORMATION pi;
+			
+			wchar_t cmdLine[MAX_PATH + 20];
+			swprintf_s(cmdLine, L"\"%s\" --macro", exePath);
+			
+			if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+				CloseHandle(pi.hProcess);
+				CloseHandle(pi.hThread);
+			}
 			return true;
 		}
 		
@@ -558,8 +626,130 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			bool expanded = (strVal == L"1");
 			OutputDebugStringW(expanded ? L"OpenKey: val-expand-state = EXPANDED\n" : L"OpenKey: val-expand-state = COLLAPSED\n");
 			m_isExpanded = expanded;
-			// Set timer to resize window after CSS transition (300ms + 50ms buffer)
-			SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 350, NULL);
+			// Resize timing: collapse immediately to avoid blur ghost, expand waits for content
+			SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, expanded ? 50 : 10, NULL);
+			return true;
+		}
+		// === Bộ gõ tab VALUE_CHANGED handlers ===
+		else if (id == L"val-modern-ortho") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vUseModernOrthography = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vUseModernOrthography, vUseModernOrthography);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-fix-recommend") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vFixRecommendBrowser = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vFixRecommendBrowser, vFixRecommendBrowser);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-auto-caps") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vUpperCaseFirstChar = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vUpperCaseFirstChar, vUpperCaseFirstChar);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-remember-code") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vRememberCode = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vRememberCode, vRememberCode);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-spell-check") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vCheckSpelling = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vCheckSpelling, vCheckSpelling);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-restore-key") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vRestoreIfWrongSpelling = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vRestoreIfWrongSpelling, vRestoreIfWrongSpelling);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-allow-zwjf") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vAllowConsonantZFWJ = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vAllowConsonantZFWJ, vAllowConsonantZFWJ);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-temp-off-spell") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vTempOffSpelling = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vTempOffSpelling, vTempOffSpelling);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-temp-off-openkey") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vTempOffOpenKey = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vTempOffOpenKey, vTempOffOpenKey);
+			notifyMainProcess();
+			return true;
+		}
+		// === Gõ tắt tab VALUE_CHANGED handlers ===
+		else if (id == L"val-use-macro") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vUseMacro = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vUseMacro, vUseMacro);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-macro-english") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vUseMacroInEnglishMode = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vUseMacroInEnglishMode, vUseMacroInEnglishMode);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-auto-caps-macro") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vAutoCapsMacro = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vAutoCapsMacro, vAutoCapsMacro);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-quick-telex") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vQuickTelex = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vQuickTelex, vQuickTelex);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-quick-start") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vQuickStartConsonant = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vQuickStartConsonant, vQuickStartConsonant);
+			notifyMainProcess();
+			return true;
+		}
+		else if (id == L"val-quick-end") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vQuickEndConsonant = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vQuickEndConsonant, vQuickEndConsonant);
+			notifyMainProcess();
 			return true;
 		}
 	}
@@ -800,6 +990,10 @@ void SettingsDialog::recalcWindowSize() {
 	
 	// Resize window
 	SetWindowPos(get_hwnd(), NULL, x, y, newWidth, newHeight, SWP_NOZORDER);
+	
+	// IMPORTANT: Re-apply acrylic effect after resize to refresh blur region
+	// Without this, Windows leaves ghost blur artifacts when window shrinks
+	enableAcrylicEffect();
 	
 	wchar_t sizeMsg[128];
 	swprintf_s(sizeMsg, L"OpenKey: Window resized to %dx%d (auto-fit)\n", newWidth, newHeight);

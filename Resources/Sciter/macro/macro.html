@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng gõ tắt</title>
+    <link rel="stylesheet" href="macro.css">
+    <script src="macro.js"></script>
+</head>
+
+<body>
+    <div class="container" id="main-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <span class="title-text">Bảng gõ tắt</span>
+            <button class="btn-close" id="btn-close" title="Đóng">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                    fill="rgba(240,23,23,1)">
+                    <path
+                        d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Main Content Section -->
+        <div class="content-section">
+            <!-- Input Card -->
+            <div class="settings-card">
+                <div class="setting-row">
+                    <span class="setting-label">Từ gõ tắt</span>
+                    <input type="text" class="setting-input" id="macro-name" placeholder="vd: btw">
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Nội dung đầy đủ</span>
+                    <input type="text" class="setting-input" id="macro-content" placeholder="vd: by the way">
+                </div>
+                <div class="button-row">
+                    <button class="btn-action btn-primary" id="btn-add">+ Thêm</button>
+                    <button class="btn-action btn-danger" id="btn-delete">- Xóa</button>
+                </div>
+            </div>
+
+            <!-- List Card -->
+            <div class="settings-card">
+                <div class="list-header">
+                    <span class="list-col-name">Từ gõ tắt</span>
+                    <span class="list-col-content">Nội dung đầy đủ</span>
+                </div>
+                <div class="macro-list" id="macro-list">
+                    <!-- Items inserted by C++ -->
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="button-row footer-row">
+                <button class="btn-action btn-secondary" id="btn-import">Nạp từ file...</button>
+                <button class="btn-action btn-secondary" id="btn-export">Xuất ra file...</button>
+            </div>
+        </div>
+
+        <!-- Hidden inputs for C++ -->
+        <input type="hidden" id="val-action" value="">
+        <input type="hidden" id="val-macro-name" value="">
+        <input type="hidden" id="val-macro-content" value="">
+    </div>
+</body>
+
+</html>

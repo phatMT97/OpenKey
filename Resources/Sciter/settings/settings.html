@@ -14,9 +14,22 @@
     <input type="checkbox" id="expand-checkbox" style="display:none;">
 
     <div class="container" id="main-container">
+        <!-- Title Bar - spans full width, close button at right corner -->
+        <div class="title-bar">
+            <span class="title-text">NeXTKey</span>
+            <button class="btn-close" id="btn-close" title="Đóng">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
+                    fill="rgba(240,23,23,1)">
+                    <path
+                        d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
         <!-- Compact Section (Left Panel) -->
         <div class="compact-section">
-            <!-- Header: V - toggle - E - dropdown - settings button -->
+            <!-- Header: V - toggle - E - dropdown -->
             <div class="header">
                 <span class="lang-label" id="lang-v">V</span>
                 <!-- Div-based toggle for proper Sciter styling -->
@@ -33,13 +46,6 @@
                     <option value="2">Simple Telex 1</option>
                     <option value="3">Simple Telex 2</option>
                 </select>
-
-                <button class="btn-settings" id="btn-close" title="Đóng">
-                    <svg viewBox="0 0 24 24" fill="#EB2121">
-                        <path
-                            d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 10.5858L9.17157 7.75736L7.75736 9.17157L10.5858 12L7.75736 14.8284L9.17157 16.2426L12 13.4142L14.8284 16.2426L16.2426 14.8284L13.4142 12L16.2426 9.17157L14.8284 7.75736L12 10.5858Z" />
-                    </svg>
-                </button>
             </div>
 
             <!-- Settings Card -->
@@ -145,6 +151,39 @@
                 <!-- Tab 1: Bộ gõ (Input Method) - Default active -->
                 <div class="tab-panel active" id="tab-panel-1">
                     <div class="tab-body">
+                        <!-- 1. Modern diacritics (oà, uý) -->
+                        <div class="setting-row">
+                            <span class="setting-label">Đặt dấu oà, uý (thay vì òa, úy)</span>
+                            <div class="toggle-switch-small" id="modern-ortho">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-modern-ortho" value="0">
+                        </div>
+                        <!-- 2. Browser/Excel fix -->
+                        <div class="setting-row">
+                            <span class="setting-label">Sửa lỗi gợi ý (trình duyệt, Excel)</span>
+                            <div class="toggle-switch-small" id="fix-recommend">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-fix-recommend" value="0">
+                        </div>
+                        <!-- 3. Auto capitalize -->
+                        <div class="setting-row">
+                            <span class="setting-label">Viết hoa chữ cái đầu câu</span>
+                            <div class="toggle-switch-small" id="auto-caps">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-auto-caps" value="0">
+                        </div>
+                        <!-- 4. Remember code table per app -->
+                        <div class="setting-row">
+                            <span class="setting-label">Tự ghi nhớ bảng mã theo ứng dụng</span>
+                            <div class="toggle-switch-small" id="remember-code">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-remember-code" value="0">
+                        </div>
+                        <!-- 5. Spell check -->
                         <div class="setting-row">
                             <span class="setting-label">Kiểm tra chính tả</span>
                             <div class="toggle-switch-small" id="spell-check">
@@ -152,19 +191,37 @@
                             </div>
                             <input type="hidden" id="val-spell-check" value="0">
                         </div>
+                        <!-- 6. Restore key on wrong word -->
                         <div class="setting-row">
-                            <span class="setting-label">Tự động khôi phục phím</span>
-                            <div class="toggle-switch-small" id="auto-restore">
+                            <span class="setting-label">Tự khôi phục phím với từ sai</span>
+                            <div class="toggle-switch-small" id="restore-key">
                                 <div class="toggle-thumb-small"></div>
                             </div>
-                            <input type="hidden" id="val-auto-restore" value="0">
+                            <input type="hidden" id="val-restore-key" value="0">
                         </div>
+                        <!-- 7. Allow ZWJF consonants -->
                         <div class="setting-row">
-                            <span class="setting-label">Bỏ dấu kiểu cũ</span>
-                            <div class="toggle-switch-small" id="old-style">
+                            <span class="setting-label">Cho phép "z w j f" làm phụ âm đầu</span>
+                            <div class="toggle-switch-small" id="allow-zwjf">
                                 <div class="toggle-thumb-small"></div>
                             </div>
-                            <input type="hidden" id="val-old-style" value="0">
+                            <input type="hidden" id="val-allow-zwjf" value="0">
+                        </div>
+                        <!-- 8. Temp disable spell with Ctrl -->
+                        <div class="setting-row">
+                            <span class="setting-label">Tạm tắt chính tả bằng phím Ctrl</span>
+                            <div class="toggle-switch-small" id="temp-off-spell">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-temp-off-spell" value="0">
+                        </div>
+                        <!-- 9. Temp disable OpenKey with Alt -->
+                        <div class="setting-row">
+                            <span class="setting-label">Tạm tắt OpenKey bằng phím Alt</span>
+                            <div class="toggle-switch-small" id="temp-off-openkey">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-temp-off-openkey" value="0">
                         </div>
                     </div>
                 </div>
@@ -172,15 +229,61 @@
                 <!-- Tab 2: Gõ tắt (Shortcuts/Macro) -->
                 <div class="tab-panel" id="tab-panel-2">
                     <div class="tab-body">
+                        <!-- 1. Enable Macro -->
                         <div class="setting-row">
-                            <span class="setting-label">Sử dụng gõ tắt</span>
+                            <span class="setting-label">Cho phép gõ tắt</span>
                             <div class="toggle-switch-small" id="use-macro">
                                 <div class="toggle-thumb-small"></div>
                             </div>
                             <input type="hidden" id="val-use-macro" value="0">
                         </div>
-                        <div class="macro-list-placeholder">
-                            <p class="placeholder-text">Danh sách gõ tắt sẽ hiển thị ở đây</p>
+                        <!-- 2. Macro in English mode -->
+                        <div class="setting-row">
+                            <span class="setting-label">Gõ tắt cả khi tắt gõ tiếng Việt</span>
+                            <div class="toggle-switch-small" id="macro-english">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-macro-english" value="0">
+                        </div>
+                        <!-- 3. Auto caps macro -->
+                        <div class="setting-row">
+                            <span class="setting-label">Tự động viết hoa theo phím tắt</span>
+                            <div class="toggle-switch-small" id="auto-caps-macro">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-auto-caps-macro" value="0">
+                        </div>
+                        <!-- 4. Quick Telex -->
+                        <div class="setting-row">
+                            <span class="setting-label"
+                                title="cc=ch, gg=gi, kk=kh, nn=ng, qq=qu, pp=ph, tt=th, uu=ươ">Gõ nhanh (cc=ch, gg=gi,
+                                nn=ng,...)</span>
+                            <div class="toggle-switch-small" id="quick-telex">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-quick-telex" value="0">
+                        </div>
+                        <!-- 5. Quick start consonant -->
+                        <div class="setting-row">
+                            <span class="setting-label" title="f→ph, j→gi, w→qu">Gõ tắt phụ âm đầu: f→ph, j→gi,
+                                w→qu</span>
+                            <div class="toggle-switch-small" id="quick-start">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-quick-start" value="0">
+                        </div>
+                        <!-- 6. Quick end consonant -->
+                        <div class="setting-row">
+                            <span class="setting-label" title="g→ng, h→nh, k→ch">Gõ tắt phụ âm cuối: g→ng, h→nh,
+                                k→ch</span>
+                            <div class="toggle-switch-small" id="quick-end">
+                                <div class="toggle-thumb-small"></div>
+                            </div>
+                            <input type="hidden" id="val-quick-end" value="0">
+                        </div>
+                        <!-- Button to open Macro Table dialog -->
+                        <div class="setting-row" style="justify-content: flex-start; padding-top: 8px;">
+                            <button class="btn-action" id="btn-macro-table">Bảng gõ tắt...</button>
                         </div>
                     </div>
                 </div>

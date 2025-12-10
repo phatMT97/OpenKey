@@ -292,12 +292,30 @@ void AppDelegate::onToggleUseMacro() {
 	}
 }
 
+// "Bảng gõ tắt" in Unicode escape sequences
+#define MACRO_WINDOW_TITLE L"B\u1EA3ng g\u00F5 t\u1EAFt"
+
 void AppDelegate::onMacroTable() {
-	if (macroDialog == NULL) {
-		macroDialog = new MacroDialog(hInstance, IDD_DIALOG_MACRO);
-		macroDialog->show();
-	} else {
-		macroDialog->bringOnTop();
+	// Anti-spam: Check if Macro window already exists
+	HWND existingMacro = FindWindowW(NULL, MACRO_WINDOW_TITLE);
+	if (existingMacro) {
+		SetForegroundWindow(existingMacro);
+		return;
+	}
+	
+	// Spawn macro subprocess (Fire and Forget)
+	WCHAR exePath[MAX_PATH];
+	GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	
+	STARTUPINFOW si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	
+	wchar_t cmdLine[MAX_PATH + 20];
+	swprintf_s(cmdLine, L"\"%s\" --macro", exePath);
+	
+	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 	}
 }
 

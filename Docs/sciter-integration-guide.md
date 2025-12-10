@@ -38,6 +38,8 @@ OpenKey.exe --settings   → SettingsDialog subprocess (30MB)
 | `<label>` around toggles | Blocks clicks | Use `<div>` |
 | `<input type="checkbox">` | ::before/::after broken | Use div-based toggles |
 | `height: 100%` on container | Breaks auto-fit | Use `height: auto` |
+| `SW_TITLELESS` | Undeclared in some versions | Use `SW_POPUP \| SW_ALPHA` |
+| `el.child(0).destroy()` | Chained call on temporary fails | Store in variable: `auto c = el.child(0); c.destroy();` |
 
 ---
 
@@ -192,6 +194,87 @@ if (container) {
 
 ---
 
+## Fixed Layout with Scrollable Lists
+
+When a dialog contains a list with variable item count, use **fixed container + fixed list height + internal scroll**:
+
+### Use Case
+Dialogs like Macro Table where:
+- Window size should NOT change based on content
+- List area should scroll when items exceed available space
+- All UI elements (header, inputs, buttons, footer) remain visible
+
+### Pattern
+
+**C++ - Fixed Window Size:**
+```cpp
+// In constructor after expand():
+SetWindowPos(get_hwnd(), NULL, 0, 0, 380, 450, SWP_NOMOVE | SWP_NOZORDER);
+// Do NOT use recalcWindowSize() for fixed layouts
+```
+
+**CSS - Height Calculation:**
+```css
+/* Total window: 450px */
+
+.container {
+    width: 380px;
+    height: 450px;          /* Fixed */
+    overflow: hidden;
+}
+
+/* Title bar */
+.title-bar {
+    height: 36px;           /* = 36px */
+}
+
+/* Content area: 450 - 36 = 414px */
+.content-section {
+    height: 414px;
+    padding: 16px;          /* = 32px vertical */
+    overflow: hidden;
+}
+
+/* List with fixed height and scroll */
+.macro-list {
+    display: block;
+    height: 150px;          /* Fixed - adjust to fit remaining space */
+    min-height: 150px;
+    max-height: 150px;
+    overflow-y: auto;       /* Standard scroll (not scroll-indicator) */
+}
+```
+
+### Height Budget Calculation
+
+Calculate heights explicitly to prevent overflow:
+
+| Element | Height |
+|---------|--------|
+| Container | 450px (window) |
+| Title bar | 36px |
+| Content padding | 32px (16px × 2) |
+| Input card | ~120px |
+| List card header | ~30px |
+| **List area** | **150px** |
+| Footer buttons | ~40px |
+| Margins | ~24px |
+| **Total** | ~432px ✅ (fits in 414px content + 36px title) |
+
+> [!TIP]
+> Always calculate height budget before implementation. Leave ~10-20px margin for safety.
+
+### Common Fixes
+
+| Issue | Fix |
+|-------|-----|
+| Footer buttons cut off | Reduce list height |
+| `scroll-indicator` not working | Use `overflow-y: auto` instead |
+| Content overflows container | Add `overflow: hidden` to content-section |
+| Items not visible | Ensure `display: block` on list |
+
+---
+
 ## Blur Effect (Windows 10/11)
 
 ```cpp
@@ -278,7 +361,15 @@ if (msg == WM_NCHITTEST) {
 | Toggles disappear on layout change | Sciter doesn't repaint absolute positioned elements | Use synchronous force reflow (via offsetHeight) |
 | Clickable div not receiving clicks | Button element has issues with child SVG | Use `<div>` with `setting-row-clickable` class |
 | JS click handler not firing | C++ HYPERLINK_CLICK intercepting | Let JS handle UI, use hidden input VALUE_CHANGED for C++ communication |
-| Layout shift on collapse | Inline-block/flex container width changes during transition | Set fixed width on static sections (e.g. `.compact-section`) |
+| Layout shift on expand/collapse | Inline-block whitespace + inconsistent padding | Use `font-size: 0` on container, reset `font-size` in sections. Keep padding on sections (not container) for consistency across states |
+| Blur ghost on window resize | Windows DWM blur doesn't update when window shrinks | Resize immediately on collapse (10ms timer), use CSS fade/slide animation on content. Remove CSS `transition` on container width. Call `enableAcrylicEffect()` after resize. |
+| Jagged/aliased borders on rounded corners | Sciter doesn't anti-alias borders well | Use `box-shadow: inset 0 0 0 1px color` instead of `border`. Reduce `border-radius` to 6px or less. |
+| Blurry/jagged SVG icons | SVG scaled from different size | Use SVG with exact display size in `viewBox`, `width`, `height` attributes (e.g., 24x24). Avoid scaling down large SVGs. |
+| Settings saved but core doesn't receive | Main process not reloading from registry | Add `APP_GET_DATA` for new settings in `WM_USER+101` handler in `SystemTrayHelper.cpp`. Settings subprocess saves to registry, main process must reload. |
+| Heap corruption with getRegBinary | `new BYTE[0]` when registry key empty | Check `size > 0` before allocating in `getRegBinary()`. Return NULL when size is 0. Don't `delete[]` the returned pointer (it's static). |
+| Macro changes not applied immediately | Main process doesn't reload macro data | Add `initMacroMap()` call in `WM_USER+101` handler. MacroDialog sends `PostMessage(mainWnd, WM_USER+101)` after saving. |
+| Input text jumps when typing | `line-height` doesn't match `height` | Use `height: 32px; line-height: 32px; padding: 0 10px;` for inputs. Keep line-height equal to height for vertical centering. |
+| Call JS functions from C++ | `element.eval()` doesn't exist | Use `call_function("funcName", arg1, arg2)` inherited from `sciter::window`. Pass UTF-8 strings. |
 
 ---
 
@@ -307,15 +398,31 @@ For expandable settings panels, use this pattern:
 <input type="hidden" id="val-expand-state" value="0">
 ```
 
-### CSS
-
 ```css
-/* Default: collapsed */
-.advanced-section {
-    display: none;
+/* Container: no padding, font-size:0 to eliminate inline-block whitespace */
+.container {
+    width: 350px;
+    padding: 0;
+    font-size: 0; /* Critical: eliminates inline-block whitespace */
 }
 
-/* Expanded state */
+/* Sections always have their own padding (prevents shift on expand) */
+.compact-section {
+    width: 350px;
+    padding: 16px;
+    font-size: 14px; /* Reset font-size from container */
+    box-sizing: border-box;
+}
+
+.advanced-section {
+    display: none;
+    width: 350px;
+    padding: 16px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Expanded state - only change display, not padding/width */
 .container.expanded {
     width: 700px;
     white-space: nowrap;
@@ -323,14 +430,14 @@ For expandable settings panels, use this pattern:
 
 .container.expanded .compact-section {
     display: inline-block;
-    width: 350px;
     vertical-align: top;
+    white-space: normal;
 }
 
 .container.expanded .advanced-section {
     display: inline-block;
-    width: 350px;
     vertical-align: top;
+    white-space: normal;
 }
 ```
 

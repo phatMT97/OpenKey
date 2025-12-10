@@ -174,6 +174,7 @@
     <ClInclude Include="ConvertToolDialog.h" />
     <ClInclude Include="ExcludedAppsDialog.h" />
     <ClInclude Include="MacroDialog.h" />
+    <ClInclude Include="MacroDialogSciter.h" />
     <ClInclude Include="MainControlDialog.h" />
     <ClInclude Include="OpenKeyHelper.h" />
     <ClInclude Include="OpenKeySettingsController.h" />
@@ -196,6 +197,7 @@
     <ClCompile Include="ConvertToolDialog.cpp" />
     <ClCompile Include="ExcludedAppsDialog.cpp" />
     <ClCompile Include="MacroDialog.cpp" />
+    <ClCompile Include="MacroDialogSciter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainControlDialog.cpp" />
     <ClCompile Include="OpenKey.cpp" />

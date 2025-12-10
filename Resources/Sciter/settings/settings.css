@@ -22,19 +22,85 @@ body {
 .container {
     width: 350px;
     height: auto;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.65);
+    padding: 0;
+    background: rgba(30, 30, 30, 0.1);
+    /* background: rgba(255, 255, 255, 0.05); */
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    transition: width 0.3s ease;
+    /* No width transition - instant resize prevents blur ghost */
+    font-size: 0;
+    /* Eliminate inline-block whitespace */
+}
+
+/* Title Bar - spans full width, larger drag zone */
+.title-bar {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 36px;
+    line-height: 36px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    cursor: default;
+}
+
+.title-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #007AFF;
+    letter-spacing: 0.5px;
+    line-height: 36px;
+}
+
+/* Close Button in Title Bar - absolute positioned at right */
+.btn-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 12px;
+    top: 6px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    outline: none;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    font-size: 20px;
+    font-weight: 300;
+    color: #EB2121;
+    line-height: 1;
+}
+
+.btn-close:hover {
+    background: rgba(235, 33, 33, 0.15);
+}
+
+.btn-close:focus {
+    outline: none;
+    border: none;
+}
+
+.btn-close svg {
+    width: 24px;
+    height: 24px;
 }
 
 /* Compact Section (Left Panel - always visible) */
 .compact-section {
     display: block;
-    width: 318px;
-    /* Fixed width = container width (350) - padding (16*2) */
+    width: 350px;
+    padding: 16px;
+    box-sizing: border-box;
+    font-size: 14px;
+    /* Reset font-size from container */
 }
 
 /* Force GPU repaint without visible change */
@@ -48,22 +114,23 @@ body {
     width: 400px;
     padding: 16px;
     border-left: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    box-sizing: border-box;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* Expanded state - use inline-block layout (more compatible with Sciter) */
 .container.expanded {
     width: 750px;
-    padding: 0;
     white-space: nowrap;
 }
 
 .container.expanded .compact-section {
     display: inline-block;
-    width: 350px;
-    padding: 16px;
     vertical-align: top;
     white-space: normal;
-    box-sizing: border-box;
 }
 
 .container.expanded .advanced-section {
@@ -73,6 +140,8 @@ body {
     vertical-align: top;
     white-space: normal;
     box-sizing: border-box;
+    opacity: 1;
+    transform: translateX(0);
 }
 
 /* Arrow rotation when expanded */
@@ -132,7 +201,7 @@ body {
     width: 50px;
     height: 28px;
     border-radius: 14px;
-    background-color: #c0c0c0;
+    background-color: #E53935;
     position: relative;
     cursor: pointer;
     vertical-align: middle;
@@ -395,39 +464,72 @@ input[type="hidden"] {
     display: none;
 }
 
+/* Action button style */
+.btn-action {
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #007AFF;
+    background: transparent;
+    border: 1px solid #007AFF;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background: #007AFF;
+    color: white;
+}
+
 /* ============================================
    ADVANCED SECTION - HORIZONTAL TABS LAYOUT
    ============================================ */
 
-/* Tab Header (horizontal tabs at top) */
+/* Tab Header (horizontal tabs at top) - segmented control style */
 .tab-header {
     display: flex;
     flex-direction: row;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    background: rgba(0, 0, 0, 0.02);
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: transparent;
 }
 
 .tab-item {
-    padding: 12px 20px;
-    font-size: 13px;
+    padding: 8px 16px;
+    font-size: 12px;
     font-weight: 500;
     color: #666;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    border-bottom: 2px solid transparent;
     white-space: nowrap;
+    border: none;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+/* First tab - round left corners */
+.tab-item:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+/* Last tab - round right corners */
+.tab-item:last-child {
+    border-radius: 0 6px 6px 0;
 }
 
 .tab-item:hover {
-    background: rgba(0, 122, 255, 0.08);
+    background: rgba(0, 122, 255, 0.1);
     color: #007AFF;
+    box-shadow: inset 0 0 0 1px #007AFF;
 }
 
 .tab-item.active {
-    color: #007AFF;
-    border-bottom-color: #007AFF;
-    background: transparent;
+    color: white;
+    background: #007AFF;
+    box-shadow: inset 0 0 0 1px #007AFF;
 }
 
 /* Tab Content Area (below tabs) */

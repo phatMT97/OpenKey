@@ -18,6 +18,9 @@ redistribute your new version, it MUST be open source.
 
 #pragma comment(lib, "Wtsapi32.lib")
 
+// Extern declaration for macro engine function
+extern void initMacroMap(const Byte* pData, const int& size);
+
 #define TIMER_REINSTALL_HOOKS 1001
 
 #define WM_TRAYMESSAGE (WM_USER + 1)
@@ -117,8 +120,43 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		APP_GET_DATA(vUseSmartSwitchKey, 0);
 		APP_GET_DATA(vCheckSpelling, 1);
 		APP_GET_DATA(vUseModernOrthography, 0);
+		// Bộ gõ tab settings
+		APP_GET_DATA(vFixRecommendBrowser, 1);
+		APP_GET_DATA(vUpperCaseFirstChar, 0);
+		APP_GET_DATA(vRememberCode, 0);
+		APP_GET_DATA(vRestoreIfWrongSpelling, 1);
+		APP_GET_DATA(vAllowConsonantZFWJ, 0);
+		APP_GET_DATA(vTempOffSpelling, 0);
+		APP_GET_DATA(vTempOffOpenKey, 0);
+		// Gõ tắt tab settings
+		APP_GET_DATA(vUseMacro, 1);
+		APP_GET_DATA(vUseMacroInEnglishMode, 0);
+		APP_GET_DATA(vAutoCapsMacro, 0);
+		APP_GET_DATA(vQuickTelex, 0);
+		APP_GET_DATA(vQuickStartConsonant, 0);
+		APP_GET_DATA(vQuickEndConsonant, 0);
+		
+		// Reload macro data from registry
+		// NOTE: getRegBinary returns a static pointer - DO NOT delete[] it
+		{
+			DWORD macroDataSize = 0;
+			BYTE* macroData = OpenKeyHelper::getRegBinary(_T("macroData"), macroDataSize);
+			if (macroData && macroDataSize > 0) {
+				initMacroMap(macroData, (int)macroDataSize);
+				// Do NOT delete[] macroData - it's a static pointer managed by OpenKeyHelper
+			} else {
+				// Empty/deleted macro data - clear the macro map
+				initMacroMap(nullptr, 0);
+			}
+		}
+		
 		// Refresh tray icon and menu to reflect new settings
 		SystemTrayHelper::updateData();
+		break;
+	
+	// Handle macro table open request from SettingsDialog subprocess
+	case WM_USER+103:
+		AppDelegate::getInstance()->onMacroTable();
 		break;
 		
 	// Handle session change (lock/unlock)

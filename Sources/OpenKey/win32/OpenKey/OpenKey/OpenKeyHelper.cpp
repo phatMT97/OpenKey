@@ -81,10 +81,19 @@ BYTE * OpenKeyHelper::getRegBinary(LPCTSTR key, DWORD& outSize) {
 	}
 	DWORD size = 0;
 	RegQueryValueEx(hKey, key, 0, 0, 0, &size);
+	
+	// IMPORTANT: Don't allocate if size is 0 - new BYTE[0] causes heap issues
+	if (size == 0) {
+		outSize = 0;
+		RegCloseKey(hKey);
+		return NULL;
+	}
+	
 	_regData = new BYTE[size];
 	if (ERROR_SUCCESS != RegQueryValueEx(hKey, key, 0, 0, _regData, &size)) {
 		delete[] _regData;
 		_regData = NULL;
+		size = 0;  // Ensure outSize is 0 on failure
 	}
 	outSize = size;
 	RegCloseKey(hKey);
