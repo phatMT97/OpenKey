@@ -135,15 +135,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// ===== ENGINE PROCESS MODE: Normal app =====
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	
-#if NDEBUG
-	//check the program is run as administrator mode
-	APP_GET_DATA(vRunAsAdmin, 0);
-	if (vRunAsAdmin && !IsUserAnAdmin()) {
-		//create admin process
-		ShellExecute(0, L"runas", OpenKeyHelper::getFullPath().c_str(), 0, 0, SW_SHOWNORMAL);
-		return 1;
-	}
-#endif
+	// NOTE: Admin mode is now handled by Task Scheduler with /rl highest
+	// (configured via registerRunOnStartup when "Run as Admin" is enabled)
+	// This removes the UAC prompt on every startup
+	
 	AppDelegate app;
 	return app.run(hInstance);
 }

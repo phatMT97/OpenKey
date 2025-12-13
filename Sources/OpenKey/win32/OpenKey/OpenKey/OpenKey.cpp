@@ -165,7 +165,7 @@ void OpenKeyInit() {
 	APP_GET_DATA(vAutoCapsMacro, 0);
 	APP_GET_DATA(vSendKeyStepByStep, 1);
 	APP_GET_DATA(vUseGrayIcon, 0);
-	APP_GET_DATA(vShowOnStartUp, 1);
+	APP_GET_DATA(vShowOnStartUp, 0);
 	APP_GET_DATA(vRunWithWindows, 1);
 	OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
 	APP_GET_DATA(vUseSmartSwitchKey, 1);

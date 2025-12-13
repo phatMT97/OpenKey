@@ -103,20 +103,46 @@ BYTE * OpenKeyHelper::getRegBinary(LPCTSTR key, DWORD& outSize) {
 void OpenKeyHelper::registerRunOnStartup(const int& val) {
 	if (val) {
 		if (vRunAsAdmin) {
+			// Use ShellExecuteEx with "runas" verb to request UAC for schtasks
+			// This triggers UAC only ONCE when user enables "Run as Admin"
 			wstring path = getFullPath();
-			wstring cmd = L"schtasks /create /sc onlogon /tn OpenKey /rl highest /tr \"\\\"" + path + L"\\\"\" /f";
-			_wsystem(cmd.c_str());
+			wstring taskCmd = L"/create /sc onlogon /tn OpenKey /rl highest /tr \"\\\"" + path + L"\\\"\" /f";
+			
+			SHELLEXECUTEINFOW sei = { sizeof(sei) };
+			sei.lpVerb = L"runas";
+			sei.lpFile = L"schtasks";
+			sei.lpParameters = taskCmd.c_str();
+			sei.nShow = SW_HIDE;
+			sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+			
+			if (ShellExecuteExW(&sei)) {
+				if (sei.hProcess) {
+					WaitForSingleObject(sei.hProcess, 5000);  // Wait for schtasks to complete
+					CloseHandle(sei.hProcess);
+				}
+				// Remove registry entry since we're using task scheduler
+				RegOpenKeyEx(HKEY_CURRENT_USER, _runOnStartupKeyPath, NULL, KEY_ALL_ACCESS, &hKey);
+				RegDeleteValue(hKey, _T("OpenKey"));
+				RegCloseKey(hKey);
+			}
+			// If user declined UAC, do nothing - startup won't be registered
 		} else {
+			// Non-admin: Use registry method (no UAC needed)
+			// First, remove any existing admin task
+			_wsystem(L"schtasks /delete /tn OpenKey /f 2>nul");
+			
+			// Then add registry entry
 			RegOpenKeyEx(HKEY_CURRENT_USER, _runOnStartupKeyPath, NULL, KEY_ALL_ACCESS, &hKey);
 			wstring path = getFullPath();
 			RegSetValueEx(hKey, _T("OpenKey"), 0, REG_SZ, (byte*)path.c_str(), ((DWORD)path.size() + 1) * sizeof(TCHAR));
 			RegCloseKey(hKey);
 		}
 	} else {
+		// Disable startup: remove both methods
 		RegOpenKeyEx(HKEY_CURRENT_USER, _runOnStartupKeyPath, NULL, KEY_ALL_ACCESS, &hKey);
 		RegDeleteValue(hKey, _T("OpenKey"));
 		RegCloseKey(hKey);
-		_wsystem(L"schtasks /delete /tn OpenKey /f");
+		_wsystem(L"schtasks /delete /tn OpenKey /f 2>nul");
 	}
 }
 
