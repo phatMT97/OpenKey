@@ -33,14 +33,15 @@ jobs:
       shell: powershell
       run: |
         Write-Host "Verifying Sciter SDK files in repository..."
-        $x64Path = "${{ github.workspace }}\windows\x64"
+        $windowsPath = "${{ github.workspace }}\windows"
+        $x64Path = "$windowsPath\x64"
         
-        # Verify files exist and have correct sizes
-        $packfolder = Get-Item "$x64Path\packfolder.exe" -ErrorAction SilentlyContinue
+        # packfolder.exe is in windows/ root, sciter.dll is in windows/x64/
+        $packfolder = Get-Item "$windowsPath\packfolder.exe" -ErrorAction SilentlyContinue
         $sciterDll = Get-Item "$x64Path\sciter.dll" -ErrorAction SilentlyContinue
         
         if (-not $packfolder -or $packfolder.Length -lt 100000) {
-          Write-Error "packfolder.exe missing or invalid in $x64Path"
+          Write-Error "packfolder.exe missing or invalid in $windowsPath"
           exit 1
         }
         if (-not $sciterDll -or $sciterDll.Length -lt 1000000) {
@@ -49,8 +50,8 @@ jobs:
         }
         
         Write-Host "Sciter SDK files verified:"
-        Write-Host "  packfolder.exe: $($packfolder.Length) bytes"
-        Write-Host "  sciter.dll: $($sciterDll.Length) bytes"
+        Write-Host "  $windowsPath\packfolder.exe: $($packfolder.Length) bytes"
+        Write-Host "  $x64Path\sciter.dll: $($sciterDll.Length) bytes"
 
     - name: Build x86
       run: msbuild -m -target:Rebuild -p:Configuration=Release -p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}

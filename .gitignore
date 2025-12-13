@@ -14,7 +14,6 @@
 !/windows/packfolder.exe
 !/windows/x64/
 /windows/x64/*
-!/windows/x64/packfolder.exe
 !/windows/x64/sciter.dll
 
 # Windows Zone.Identifier files
