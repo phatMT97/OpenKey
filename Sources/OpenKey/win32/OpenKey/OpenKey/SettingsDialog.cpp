@@ -596,9 +596,22 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 				std::wstring str = val.get<std::wstring>();
 				if (str.length() > 0) {
 					int charCode = (int)str[0];
-					// Store the character in the high byte (bits 24-31)
-					vSwitchKeyStatus &= 0x00FFFFFF;  // Clear high byte
-					vSwitchKeyStatus |= ((unsigned int)charCode << 24);
+					// Convert character to virtual key code for proper matching
+					// The engine uses GET_SWITCH_KEY(data) = (data & 0xFF) to check keycode
+					// We need to store the VK code in low byte and char in high byte
+					SHORT vkResult = VkKeyScanW((WCHAR)charCode);
+					BYTE vkCode = LOBYTE(vkResult);  // Get virtual key code
+					
+					// Store: low byte = VK code (for engine matching), high byte = char (for UI display)
+					vSwitchKeyStatus &= 0x00FFFF00;  // Clear both low byte and high byte
+					vSwitchKeyStatus |= vkCode;      // Set low byte to VK code
+					vSwitchKeyStatus |= ((unsigned int)charCode << 24);  // Set high byte to char for display
+					APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
+					notifyMainProcess();
+				} else {
+					// Empty string - clear custom key (0xFE means no additional key)
+					vSwitchKeyStatus &= 0x00FFFF00;  // Clear both low byte and high byte
+					vSwitchKeyStatus |= 0xFE;        // Special value: no custom key
 					APP_SET_DATA(vSwitchKeyStatus, vSwitchKeyStatus);
 					notifyMainProcess();
 				}
