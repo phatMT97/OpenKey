@@ -29,52 +29,28 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Download Sciter SDK Files
+    - name: Verify Sciter SDK Files
       shell: powershell
       run: |
-        $extractPath = "${{ github.workspace }}\windows"
-        $x64Path = "$extractPath\x64"
+        Write-Host "Verifying Sciter SDK files in repository..."
+        $x64Path = "${{ github.workspace }}\windows\x64"
         
-        # Create directories
-        New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
-        New-Item -ItemType Directory -Force -Path $x64Path | Out-Null
+        # Verify files exist and have correct sizes
+        $packfolder = Get-Item "$x64Path\packfolder.exe" -ErrorAction SilentlyContinue
+        $sciterDll = Get-Item "$x64Path\sciter.dll" -ErrorAction SilentlyContinue
         
-        # GitLab API URLs for raw file download with LFS support
-        # Project ID for sciter-engine/sciter-js-sdk is URL-encoded: sciter-engine%2Fsciter-js-sdk
-        $projectPath = "sciter-engine%2Fsciter-js-sdk"
-        $branch = "main"
-        
-        # packfolder.exe is stored with Git LFS, need lfs=true
-        $packfolderUrl = "https://gitlab.com/api/v4/projects/$projectPath/repository/files/bin%2Fwindows%2Fx64%2Fpackfolder.exe/raw?ref=$branch&lfs=true"
-        $sciterDllUrl = "https://gitlab.com/api/v4/projects/$projectPath/repository/files/bin%2Fwindows%2Fx64%2Fsciter.dll/raw?ref=$branch&lfs=true"
-        
-        Write-Host "Downloading packfolder.exe from GitLab API..."
-        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\packfolder.exe" $packfolderUrl
-        
-        Write-Host "Downloading sciter.dll from GitLab API..."
-        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\sciter.dll" $sciterDllUrl
-        
-        # Verify downloads
-        $packSize = (Get-Item "$x64Path\packfolder.exe").Length
-        $dllSize = (Get-Item "$x64Path\sciter.dll").Length
-        Write-Host "packfolder.exe size: $packSize bytes"
-        Write-Host "sciter.dll size: $dllSize bytes"
-        
-        if ($packSize -lt 100000) {
-          Write-Error "packfolder.exe download failed or file too small ($packSize bytes)"
+        if (-not $packfolder -or $packfolder.Length -lt 100000) {
+          Write-Error "packfolder.exe missing or invalid in $x64Path"
           exit 1
         }
-        if ($dllSize -lt 1000000) {
-          Write-Error "sciter.dll download failed or file too small ($dllSize bytes)"
+        if (-not $sciterDll -or $sciterDll.Length -lt 1000000) {
+          Write-Error "sciter.dll missing or invalid in $x64Path"
           exit 1
         }
         
-        # Also copy to windows root for compatibility
-        Copy-Item "$x64Path\packfolder.exe" -Destination $extractPath -Force
-        Copy-Item "$x64Path\sciter.dll" -Destination $extractPath -Force
-        
-        Write-Host "Downloaded Sciter files:"
-        Get-ChildItem $x64Path
+        Write-Host "Sciter SDK files verified:"
+        Write-Host "  packfolder.exe: $($packfolder.Length) bytes"
+        Write-Host "  sciter.dll: $($sciterDll.Length) bytes"
 
     - name: Build x86
       run: msbuild -m -target:Rebuild -p:Configuration=Release -p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}

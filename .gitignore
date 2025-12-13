@@ -9,8 +9,13 @@
 /Sources/OpenKey/win32/OpenKey/OpenKey/x64/Release
 /Sources/OpenKey/win32/OpenKey/OpenKeyUpdate/x64/Release
 
-# Sciter SDK binaries (downloaded separately)
-/windows/
+# Sciter SDK - ignore most but keep essential build tools
+/windows/*
+!/windows/packfolder.exe
+!/windows/x64/
+/windows/x64/*
+!/windows/x64/packfolder.exe
+!/windows/x64/sciter.dll
 
 # Windows Zone.Identifier files
 *:Zone.Identifier
@@ -20,10 +25,10 @@
 *.bak
 *.tmp
 
-# Release/Debug output
-*.exe
-*.dll
-*.pdb
-*.obj
-*.ilk
-*.idb
+# Release/Debug output (in source directories)
+/Sources/**/*.exe
+/Sources/**/*.dll
+/Sources/**/*.pdb
+/Sources/**/*.obj
+/Sources/**/*.ilk
+/Sources/**/*.idb
