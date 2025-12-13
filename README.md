@@ -53,6 +53,11 @@ Thiết kế lại hoàn toàn giao diện người dùng với phong cách hi�
 
 > 🎨 Được xây dựng trên nền tảng **Sciter** - HTML/CSS rendering engine nhẹ và nhanh.
 
+<p align="center">
+  <img src="Docs/images/nextkey-compact.png" alt="NextKey Compact View" width="250">
+  <img src="Docs/images/nextkey-expanded.png" alt="NextKey Expanded View" width="550">
+</p>
+<p align="center"><em>Giao diện NextKey: Chế độ compact (trái) và mở rộng với Advanced Settings (phải)</em></p>
 
 ---
 
