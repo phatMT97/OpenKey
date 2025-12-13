@@ -53,6 +53,30 @@ jobs:
         Write-Host "  $windowsPath\packfolder.exe: $($packfolder.Length) bytes"
         Write-Host "  $x64Path\sciter.dll: $($sciterDll.Length) bytes"
 
+    - name: Generate Sciter Resources
+      shell: powershell
+      run: |
+        Write-Host "Generating Sciter resources with packfolder..."
+        $packfolder = "${{ github.workspace }}\windows\packfolder.exe"
+        $sciterDir = "${{ github.workspace }}\Resources\Sciter"
+        $outputFile = "$sciterDir\resources.cpp"
+        
+        # Run packfolder to generate resources.cpp
+        & $packfolder $sciterDir $outputFile -v "resources"
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "packfolder.exe failed with exit code $LASTEXITCODE"
+          exit 1
+        }
+        
+        if (Test-Path $outputFile) {
+          $size = (Get-Item $outputFile).Length
+          Write-Host "Generated $outputFile ($size bytes)"
+        } else {
+          Write-Error "resources.cpp was not generated"
+          exit 1
+        }
+
     - name: Build x86
       run: msbuild -m -target:Rebuild -p:Configuration=Release -p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
 
