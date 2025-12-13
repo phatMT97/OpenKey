@@ -37,8 +37,16 @@ jobs:
         $zipPath = "$env:RUNNER_TEMP\sciter-sdk.zip"
         $extractPath = "${{ github.workspace }}\windows"
         
-        # Download SDK
-        Invoke-WebRequest -Uri $sdkUrl -OutFile $zipPath -UseBasicParsing
+        # Download SDK using curl (more reliable than Invoke-WebRequest for GitHub)
+        Write-Host "Downloading from $sdkUrl..."
+        curl.exe -L --retry 5 --retry-delay 10 --retry-connrefused -o $zipPath $sdkUrl
+        
+        if (-not (Test-Path $zipPath)) {
+          Write-Error "Failed to download Sciter SDK"
+          exit 1
+        }
+        
+        Write-Host "Download complete. File size: $((Get-Item $zipPath).Length) bytes"
         
         # Create windows directory
         New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
