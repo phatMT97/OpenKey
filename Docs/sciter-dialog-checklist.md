@@ -429,33 +429,61 @@ case WM_USER+101:
 > [!IMPORTANT]
 > **Use `data-tooltip` attribute, NOT `title`!** The `title` attribute triggers both native tooltip AND CSS custom tooltip (double tooltip bug).
 
-**CSS Pattern (in theme.css):**
+### Known Sciter Limitations
+
+| Issue | Sciter Behavior | Solution |
+|-------|-----------------|----------|
+| Arrow (`::before`) | Renders as **black bar** instead of triangle | Use `display: none !important` on `::before` |
+| Class + pseudo-element | `[attr].class:hover::after` **doesn't work** | Use **ID selectors** instead: `#my-id:hover::after` |
+| `bottom` positioning | May not work with pseudo-elements | Use negative `top` value: `top: -40px` |
+
+### CSS Pattern (in theme.css):
+
 ```css
-[data-tooltip] {
-    position: relative;
+/* Hide arrow - Sciter renders border-based arrows as black bars */
+[data-tooltip]:hover::before {
+    display: none !important;
 }
 
+/* Default: Tooltip appears BELOW element */
 [data-tooltip]:hover::after {
     content: attr(data-tooltip);
     position: absolute;
-    top: calc(100% + 8px);  /* Below element, not above (avoids clipping) */
-    right: 0;               /* Right-aligned to fit in narrow window */
-    max-width: 200px;       /* Keep within window boundary */
+    top: calc(100% + 6px);
+    right: 0;
+    max-width: 220px;
     padding: 8px 12px;
-    background: rgba(30, 30, 40, 0.92);
+    background: rgba(30, 30, 40, 0.95);
     color: #fff;
     font-size: 12px;
-    border-radius: 8px;
+    border-radius: 6px;
     white-space: normal;
     z-index: 9999;
     pointer-events: none;
+    text-decoration: none !important;  /* Prevent underline artifacts */
+}
+
+/* TOOLTIP ABOVE: Use ID selectors (class selectors don't work in Sciter) */
+#temp-off-spell:hover::after,
+#temp-off-openkey:hover::after,
+#use-clipboard:hover::after {
+    top: -40px;  /* Negative top, not bottom */
 }
 ```
 
-**HTML Usage:**
+### HTML Usage:
+
 ```html
+<!-- Normal tooltip (appears below) -->
 <div class="toggle-switch-small" id="my-toggle" 
      data-tooltip="Mô tả chức năng của toggle này">
+    ...
+</div>
+
+<!-- Tooltip that needs to appear ABOVE (e.g., near bottom of panel) -->
+<!-- Must add ID to CSS rule above -->
+<div class="toggle-switch-small" id="use-clipboard" 
+     data-tooltip="Tooltip text here">
     ...
 </div>
 ```
@@ -463,8 +491,8 @@ case WM_USER+101:
 > [!CAUTION]  
 > **Tooltip clipping issues:** Sciter windows clip content at window boundary. Solutions:
 > - Use `right: 0` (not `left: 50%`) to prevent overflow on right side
-> - Use `top: calc(100% + 8px)` (not `bottom:`) to show below element
-> - Keep `max-width: 200px` or less for narrow dialogs (350px width)
+> - For elements near **bottom** of panel, add their ID to the "tooltip above" CSS rule
+> - Keep `max-width: 220px` or less for narrow dialogs (350px width)
 > - Keep `.container { overflow: hidden }` (visible causes text blur issues)
 
 ---

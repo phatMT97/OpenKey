@@ -80,52 +80,58 @@
 /* ============================================
    CUSTOM TOOLTIP - Shared Glassmorphism Style
    Use data-tooltip attribute (NOT title) to avoid native tooltip!
+   NOTE: Sciter has limited ::before/::after support, so no arrow
    ============================================ */
 [data-tooltip] {
     position: relative;
 }
 
+/* Default: Tooltip appears BELOW element */
 [data-tooltip]:hover::after {
     content: attr(data-tooltip);
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 6px);
     right: 0;
     padding: 8px 12px;
-    background: rgba(30, 30, 40, 0.92);
+    background: rgba(30, 30, 40, 0.95);
     color: #fff;
     font-size: 12px;
     font-weight: 400;
     line-height: 1.4;
-    border-radius: 8px;
+    border-radius: 6px;
     white-space: normal;
-    max-width: 200px;
+    max-width: 220px;
     text-align: left;
     z-index: 9999;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    animation: tooltipFadeIn 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     pointer-events: none;
+    text-decoration: none !important;
+    border: none !important;
 }
 
-/* Arrow pointing up */
+/* Hide arrow - Sciter renders it as a black bar */
 [data-tooltip]:hover::before {
-    content: "";
-    position: absolute;
-    top: calc(100% + 2px);
-    right: 10px;
-    border: 6px solid transparent;
-    border-bottom-color: rgba(30, 30, 40, 0.92);
-    z-index: 9999;
-    pointer-events: none;
+    display: none !important;
+}
+
+/* ============================================
+   TOOLTIP-TOP: For elements near bottom of panel
+   Using ID selectors for Sciter compatibility
+   ============================================ */
+#temp-off-spell:hover::after,
+#temp-off-openkey:hover::after,
+#use-clipboard:hover::after {
+    top: -40px;
 }
 
 @keyframes tooltipFadeIn {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(4px);
+        transform: translateY(4px);
     }
 
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0);
     }
 }
