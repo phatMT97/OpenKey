@@ -29,6 +29,30 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+    - name: Download Sciter SDK
+      shell: powershell
+      run: |
+        Write-Host "Downloading Sciter SDK..."
+        $sdkUrl = "https://github.com/nicecapj/nicecapj.github.io/raw/refs/heads/master/sciter/sciter-js-sdk-5.0.3.37_win64.zip"
+        $zipPath = "$env:RUNNER_TEMP\sciter-sdk.zip"
+        $extractPath = "${{ github.workspace }}\windows"
+        
+        # Download SDK
+        Invoke-WebRequest -Uri $sdkUrl -OutFile $zipPath -UseBasicParsing
+        
+        # Create windows directory
+        New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
+        
+        # Extract SDK
+        Expand-Archive -Path $zipPath -DestinationPath $env:RUNNER_TEMP\sciter-sdk -Force
+        
+        # Copy required files (packfolder.exe)
+        Copy-Item "$env:RUNNER_TEMP\sciter-sdk\bin\windows\x64\packfolder.exe" -Destination $extractPath -Force
+        Copy-Item "$env:RUNNER_TEMP\sciter-sdk\bin\windows\x64\sciter.dll" -Destination $extractPath -Force
+        
+        Write-Host "Sciter SDK files copied to $extractPath"
+        Get-ChildItem $extractPath
+
     - name: Build x86
       run: msbuild -m -target:Rebuild -p:Configuration=Release -p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
 
