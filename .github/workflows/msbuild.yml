@@ -39,28 +39,39 @@ jobs:
         New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
         New-Item -ItemType Directory -Force -Path $x64Path | Out-Null
         
-        # Direct download URLs from GitLab (official Sciter repository)
-        $baseUrl = "https://gitlab.com/sciter-engine/sciter-js-sdk/-/raw/main/bin/windows/x64"
+        # GitLab API URLs for raw file download with LFS support
+        # Project ID for sciter-engine/sciter-js-sdk is URL-encoded: sciter-engine%2Fsciter-js-sdk
+        $projectPath = "sciter-engine%2Fsciter-js-sdk"
+        $branch = "main"
         
-        Write-Host "Downloading packfolder.exe..."
-        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\packfolder.exe" "$baseUrl/packfolder.exe"
+        # packfolder.exe is stored with Git LFS, need lfs=true
+        $packfolderUrl = "https://gitlab.com/api/v4/projects/$projectPath/repository/files/bin%2Fwindows%2Fx64%2Fpackfolder.exe/raw?ref=$branch&lfs=true"
+        $sciterDllUrl = "https://gitlab.com/api/v4/projects/$projectPath/repository/files/bin%2Fwindows%2Fx64%2Fsciter.dll/raw?ref=$branch&lfs=true"
         
-        Write-Host "Downloading sciter.dll..."
-        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\sciter.dll" "$baseUrl/sciter.dll"
+        Write-Host "Downloading packfolder.exe from GitLab API..."
+        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\packfolder.exe" $packfolderUrl
+        
+        Write-Host "Downloading sciter.dll from GitLab API..."
+        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\sciter.dll" $sciterDllUrl
+        
+        # Verify downloads
+        $packSize = (Get-Item "$x64Path\packfolder.exe").Length
+        $dllSize = (Get-Item "$x64Path\sciter.dll").Length
+        Write-Host "packfolder.exe size: $packSize bytes"
+        Write-Host "sciter.dll size: $dllSize bytes"
+        
+        if ($packSize -lt 100000) {
+          Write-Error "packfolder.exe download failed or file too small ($packSize bytes)"
+          exit 1
+        }
+        if ($dllSize -lt 1000000) {
+          Write-Error "sciter.dll download failed or file too small ($dllSize bytes)"
+          exit 1
+        }
         
         # Also copy to windows root for compatibility
         Copy-Item "$x64Path\packfolder.exe" -Destination $extractPath -Force
         Copy-Item "$x64Path\sciter.dll" -Destination $extractPath -Force
-        
-        # Verify downloads
-        if (-not (Test-Path "$x64Path\packfolder.exe") -or (Get-Item "$x64Path\packfolder.exe").Length -lt 100000) {
-          Write-Error "packfolder.exe download failed or file too small"
-          exit 1
-        }
-        if (-not (Test-Path "$x64Path\sciter.dll") -or (Get-Item "$x64Path\sciter.dll").Length -lt 1000000) {
-          Write-Error "sciter.dll download failed or file too small"
-          exit 1
-        }
         
         Write-Host "Downloaded Sciter files:"
         Get-ChildItem $x64Path
