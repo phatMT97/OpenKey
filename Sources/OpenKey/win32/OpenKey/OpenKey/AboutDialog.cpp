@@ -35,9 +35,16 @@ namespace sciter {
 }
 
 AboutDialog::AboutDialog()
-	: sciter::window(SW_POPUP | SW_ALPHA | SW_ENABLE_DEBUG, RECT{0, 0, 500, 600}) {
+	: sciter::window(SW_POPUP | SW_ALPHA | SW_ENABLE_DEBUG, RECT{0, 0, 360, 320}) {
 	
-	// Load HTML file - get path relative to executable
+#ifdef NDEBUG
+	// Release: load from embedded resources (packed by packfolder.exe)
+	if (!load(WSTR("this://app/about/about.html"))) {
+		MessageBoxW(NULL, L"Failed to load about.html from resources", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+#else
+	// Debug: load from file (allows hot-reload during development)
 	WCHAR exePath[MAX_PATH];
 	GetModuleFileNameW(NULL, exePath, MAX_PATH);
 	
@@ -53,6 +60,7 @@ AboutDialog::AboutDialog()
 		MessageBoxW(NULL, htmlPath, L"Failed to load about.html", MB_OK | MB_ICONERROR);
 		return;
 	}
+#endif
 
 	// Show the window
 	expand();
@@ -64,7 +72,7 @@ AboutDialog::AboutDialog()
 	SetWindowSubclass(get_hwnd(), AboutDialog::SubclassProc, 1, 0);
 	
 	// Set window title for anti-spam detection
-	SetWindowTextW(get_hwnd(), L"About OpenKey");
+	SetWindowTextW(get_hwnd(), L"V\u1EC1 NextKey");
 	
 	// Center window on screen
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -75,7 +83,7 @@ AboutDialog::AboutDialog()
 	int winHeight = rc.bottom - rc.top;
 	int x = (screenWidth - winWidth) / 2;
 	int y = (screenHeight - winHeight) / 2;
-	SetWindowPos(get_hwnd(), NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	SetWindowPos(get_hwnd(), HWND_NOTOPMOST, x, y, 0, 0, SWP_NOSIZE);
 }
 
 AboutDialog::~AboutDialog() {
@@ -104,10 +112,13 @@ LRESULT CALLBACK AboutDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, L
 			
 			// Only allow dragging on very top (header area only)
 			// Keep it small to ensure most content is clickable
-			const int DRAG_ZONE_HEIGHT = 150;  // Only top 150px is draggable
+			const int DRAG_ZONE_HEIGHT = 50;  // Top 50px is draggable (reduced from 150)
 			
-			if (pt.y < DRAG_ZONE_HEIGHT) {
-				return HTCAPTION;  // Enable dragging on header
+			// Exclude close button area (last 40px on right side)
+			int closeButtonZone = rc.right - 40;
+			
+			if (pt.y < DRAG_ZONE_HEIGHT && pt.x < closeButtonZone) {
+				return HTCAPTION;  // Enable dragging on header (except close button)
 			}
 			// Otherwise return HTCLIENT (let Sciter handle clicks)
 		}
@@ -138,8 +149,8 @@ bool AboutDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			checkUpdate();
 			return true;
 		}
-		else if (id == L"close-btn") {
-			closeWindow();
+		else if (id == L"btn-close") {
+			PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
 			return true;
 		}
 		

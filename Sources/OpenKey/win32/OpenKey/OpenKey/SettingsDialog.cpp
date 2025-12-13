@@ -23,6 +23,8 @@ redistribute your new version, it MUST be open source.
 #pragma comment(lib, "dwmapi.lib")
 #pragma comment(lib, "comctl32.lib")
 
+extern int vExcludeApps;  // Defined in AppDelegate.cpp
+
 #define TIMER_RESIZE_WINDOW 1001
 
 SettingsDialog::SettingsDialog()
@@ -54,7 +56,26 @@ SettingsDialog::SettingsDialog()
 	APP_GET_DATA(vQuickStartConsonant, 0);    // Gõ tắt phụ âm đầu
 	APP_GET_DATA(vQuickEndConsonant, 0);      // Gõ tắt phụ âm cuối
 	
-	// Load HTML file
+	// Hệ thống (System) tab settings
+	APP_GET_DATA(vSupportMetroApp, 1);        // Hỗ trợ ứng dụng Metro
+	APP_GET_DATA(vCreateDesktopShortcut, 0);  // Tạo biểu tượng trên Desktop
+	APP_GET_DATA(vRunWithWindows, 0);         // Khởi động cùng Windows
+	APP_GET_DATA(vShowOnStartUp, 0);          // Bật bảng này khi khởi động
+	APP_GET_DATA(vUseGrayIcon, 0);            // Biểu tượng hiện đại (0 = modern)
+	APP_GET_DATA(vFixChromiumBrowser, 0);     // Sửa lỗi trên Chromium
+	APP_GET_DATA(vRunAsAdmin, 0);             // Chạy với quyền Admin
+	APP_GET_DATA(vSendKeyStepByStep, 1);      // Dùng clipboard (0 = clipboard)
+	APP_GET_DATA(vExcludeApps, 1);            // Bật loại trừ ứng dụng
+	
+	// Load HTML
+#ifdef NDEBUG
+	// Release: load from embedded resources (packed by packfolder.exe)
+	if (!load(WSTR("this://app/settings/settings.html"))) {
+		MessageBoxW(NULL, L"Failed to load settings.html from resources", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+#else
+	// Debug: load from file (allows hot-reload during development)
 	WCHAR exePath[MAX_PATH];
 	GetModuleFileNameW(NULL, exePath, MAX_PATH);
 	WCHAR* lastSlash = wcsrchr(exePath, L'\\');
@@ -67,6 +88,7 @@ SettingsDialog::SettingsDialog()
 		MessageBoxW(NULL, htmlPath, L"Failed to load settings.html", MB_OK | MB_ICONERROR);
 		return;
 	}
+#endif
 
 	// Show the window
 	expand();
@@ -216,9 +238,30 @@ LRESULT CALLBACK SettingsDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam
 		return result;
 	}
 	
+	// Handle realtime language state change from main process (Smart Switch, Excluded Apps)
+	// This is a fast path - only updates the V/E toggle, not all settings
+	if (msg == GetNextKeyUpdateMsg()) {
+		bool isVietnamese = (wParam != 0);
+		vLanguage = isVietnamese ? 1 : 0;  // Update local state
+		
+		SettingsDialog* dialog = reinterpret_cast<SettingsDialog*>(dwRefData);
+		if (dialog) {
+			sciter::dom::element root = dialog->root();
+			sciter::dom::element toggleLang = root.find_first("#toggle-language");
+			if (toggleLang) {
+				if (!isVietnamese) { // English mode = checked
+					toggleLang.set_attribute("class", L"toggle-switch checked");
+				} else { // Vietnamese mode = unchecked
+					toggleLang.set_attribute("class", L"toggle-switch");
+				}
+			}
+		}
+		return 0;
+	}
+	
 	// Handle notification from main process to update UI (bidirectional sync)
 	if (msg == WM_USER + 102) {
-		OutputDebugStringW(L"OpenKey: Received WM_USER+102 - updating UI from registry\n");
+
 		
 		// Reload ALL settings from registry
 		APP_GET_DATA(vLanguage, 1);
@@ -287,6 +330,13 @@ LRESULT CALLBACK SettingsDialog::SubclassProc(HWND hwnd, UINT msg, WPARAM wParam
 				if (vUseSmartSwitchKey) smartSwitch.set_attribute("class", L"toggle-switch-small checked");
 				else smartSwitch.set_attribute("class", L"toggle-switch-small");
 			}
+			
+			// Update exclude apps toggle
+			sciter::dom::element excludeApps = root.find_first("#exclude-apps");
+			if (excludeApps) {
+				if (vExcludeApps) excludeApps.set_attribute("class", L"toggle-switch-small checked");
+				else excludeApps.set_attribute("class", L"toggle-switch-small");
+			}
 		}
 		
 		return 0;
@@ -334,20 +384,13 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 	std::wstring targetClass = targetEl.get_attribute("class");
 	std::string targetTag = targetEl.get_tag();
 	
-	wchar_t debugMsg[512];
-	swprintf_s(debugMsg, L"OpenKey: event cmd=%d target=[%S#%s.%s]\n", 
-		params.cmd, 
-		targetTag.c_str(),
-		targetId.c_str(),
-		targetClass.c_str());
-	OutputDebugStringW(debugMsg);
-	
+
 	if (sciter::window::handle_event(he, params))
 		return true;
 	
 	// Handle DOCUMENT_READY to set initial values from registry
 	if (params.cmd == DOCUMENT_READY) {
-		OutputDebugStringW(L"OpenKey: DOCUMENT_READY event\n");
+
 		sciter::dom::element root = this->root();
 		
 		// Set dropdown values
@@ -415,6 +458,13 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			else smartSwitch.set_attribute("class", L"toggle-switch-small");
 		}
 		
+		// Exclude apps toggle
+		sciter::dom::element excludeApps = root.find_first("#exclude-apps");
+		if (excludeApps) {
+			if (vExcludeApps) excludeApps.set_attribute("class", L"toggle-switch-small checked");
+			else excludeApps.set_attribute("class", L"toggle-switch-small");
+		}
+		
 		// === Bộ gõ tab toggles ===
 		auto setToggleState = [&root](const char* selector, int value) {
 			sciter::dom::element el = root.find_first(selector);
@@ -442,6 +492,16 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		setToggleState("#quick-start", vQuickStartConsonant);
 		setToggleState("#quick-end", vQuickEndConsonant);
 		
+		// Hệ thống (System) tab toggles
+		setToggleState("#metro-support", vSupportMetroApp);
+		setToggleState("#desktop-shortcut", vCreateDesktopShortcut);
+		setToggleState("#run-startup", vRunWithWindows);
+		setToggleState("#show-on-startup", vShowOnStartUp);
+		setToggleState("#modern-icon", !vUseGrayIcon);  // modern = NOT gray
+		setToggleState("#chromium-fix", vFixChromiumBrowser);
+		setToggleState("#run-admin", vRunAsAdmin);
+		setToggleState("#use-clipboard", !vSendKeyStepByStep);  // clipboard = NOT step-by-step
+		
 		return true;
 	}
 	
@@ -452,14 +512,7 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		std::wstring className = el.get_attribute("class");
 		std::string tagName = el.get_tag();
 		
-		// DEBUG: Log ALL button clicks to diagnose issue
-		wchar_t debugMsg[512];
-		swprintf_s(debugMsg, L"OpenKey: BUTTON_CLICK - id='%s' class='%s' tag='%S'\n", 
-			id.empty() ? L"(empty)" : id.c_str(), 
-			className.empty() ? L"(empty)" : className.c_str(),
-			tagName.empty() ? "(empty)" : tagName.c_str());
-		OutputDebugStringW(debugMsg);
-		
+
 		if (id == L"btn-close") {
 			// Close the window
 			PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
@@ -467,26 +520,28 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		}
 		
 		if (id == L"btn-macro-table") {
-			// Spawn macro table subprocess directly
-			WCHAR exePath[MAX_PATH];
-			GetModuleFileNameW(NULL, exePath, MAX_PATH);
-			
-			STARTUPINFOW si = { sizeof(si) };
-			PROCESS_INFORMATION pi;
-			
-			wchar_t cmdLine[MAX_PATH + 20];
-			swprintf_s(cmdLine, L"\"%s\" --macro", exePath);
-			
-			if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-				CloseHandle(pi.hProcess);
-				CloseHandle(pi.hThread);
+			// Send message to main process to spawn macro subprocess
+			// Main process will track the handle for proper cleanup on exit
+			HWND mainWnd = FindWindow(_T("OpenKeyVietnameseInputMethod"), NULL);
+			if (mainWnd) {
+				PostMessage(mainWnd, WM_USER + 103, 0, 0);
+			}
+			return true;
+		}
+		
+		if (id == L"btn-excluded-apps") {
+			// Send message to main process to spawn excluded apps subprocess
+			// Main process will track the handle for proper cleanup on exit
+			HWND mainWnd = FindWindow(_T("OpenKeyVietnameseInputMethod"), NULL);
+			if (mainWnd) {
+				PostMessage(mainWnd, WM_USER + 104, 0, 0);
 			}
 			return true;
 		}
 		
 		// Handle advanced settings button - toggle expansion
 		if (id == L"btn-advanced") {
-			OutputDebugStringW(L"OpenKey: btn-advanced MATCHED!\n");
+
 			
 			// Toggle expanded class on container via JavaScript
 			sciter::dom::element root = this->root();
@@ -497,12 +552,12 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 					// Remove expanded
 					container.set_attribute("class", L"container");
 					m_isExpanded = false;
-					OutputDebugStringW(L"OpenKey: Collapsing panel\n");
+
 				} else {
 					// Add expanded
 					container.set_attribute("class", L"container expanded");
 					m_isExpanded = true;
-					OutputDebugStringW(L"OpenKey: Expanding panel\n");
+
 				}
 				// Resize window after CSS applies
 				SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 50, NULL);
@@ -515,7 +570,7 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		sciter::dom::element el(params.heTarget);
 		std::wstring id = el.get_attribute("id");
 		
-		OutputDebugStringW((L"OpenKey: VALUE_CHANGED id=" + id + L"\n").c_str());
+
 		
 		// Handle dropdowns by ID
 		if (id == L"input-type") {
@@ -555,7 +610,7 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			sciter::value val = el.get_value();
 			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
 			bool checked = (strVal == L"1");
-			OutputDebugStringW(checked ? L"OpenKey: val-toggle-language = CHECKED\n" : L"OpenKey: val-toggle-language = UNCHECKED\n");
+
 			vLanguage = checked ? 0 : 1;  // checked = English (0)
 			APP_SET_DATA(vLanguage, vLanguage);
 			notifyMainProcess();
@@ -620,11 +675,20 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			notifyMainProcess();
 			return true;
 		}
+		else if (id == L"val-exclude-apps") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			bool checked = (strVal == L"1");
+			vExcludeApps = checked ? 1 : 0;
+			APP_SET_DATA(vExcludeApps, vExcludeApps);
+			notifyMainProcess();
+			return true;
+		}
 		else if (id == L"val-expand-state") {
 			sciter::value val = el.get_value();
 			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
 			bool expanded = (strVal == L"1");
-			OutputDebugStringW(expanded ? L"OpenKey: val-expand-state = EXPANDED\n" : L"OpenKey: val-expand-state = COLLAPSED\n");
+
 			m_isExpanded = expanded;
 			// Resize timing: collapse immediately to avoid blur ghost, expand waits for content
 			SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, expanded ? 50 : 10, NULL);
@@ -752,6 +816,82 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 			notifyMainProcess();
 			return true;
 		}
+		// === Hệ thống (System) tab VALUE_CHANGED handlers ===
+		else if (id == L"val-metro-support") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vSupportMetroApp = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vSupportMetroApp, vSupportMetroApp);
+			notifyMainProcess();
+
+			return true;
+		}
+		else if (id == L"val-desktop-shortcut") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vCreateDesktopShortcut = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vCreateDesktopShortcut, vCreateDesktopShortcut);
+			notifyMainProcess();
+
+			return true;
+		}
+		else if (id == L"val-run-startup") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vRunWithWindows = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vRunWithWindows, vRunWithWindows);
+			OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
+
+			return true;
+		}
+		else if (id == L"val-show-on-startup") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vShowOnStartUp = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vShowOnStartUp, vShowOnStartUp);
+
+			return true;
+		}
+		else if (id == L"val-modern-icon") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			// checked = modern icon, so vUseGrayIcon = 0
+			vUseGrayIcon = (strVal == L"1") ? 0 : 1;
+			APP_SET_DATA(vUseGrayIcon, vUseGrayIcon);
+			notifyMainProcess();
+
+			return true;
+		}
+		else if (id == L"val-chromium-fix") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vFixChromiumBrowser = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vFixChromiumBrowser, vFixChromiumBrowser);
+			notifyMainProcess();
+
+			return true;
+		}
+		else if (id == L"val-run-admin") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			vRunAsAdmin = (strVal == L"1") ? 1 : 0;
+			APP_SET_DATA(vRunAsAdmin, vRunAsAdmin);
+			if (vRunWithWindows) {
+				OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
+			}
+
+			return true;
+		}
+		else if (id == L"val-use-clipboard") {
+			sciter::value val = el.get_value();
+			std::wstring strVal = val.is_string() ? val.get<std::wstring>() : L"0";
+			// checked = use clipboard, so vSendKeyStepByStep = 0
+			vSendKeyStepByStep = (strVal == L"1") ? 0 : 1;
+			APP_SET_DATA(vSendKeyStepByStep, vSendKeyStepByStep);
+			notifyMainProcess();
+
+			return true;
+		}
 	}
 	
 	// Handle HYPERLINK_CLICK events for toggle switches AND clickable divs
@@ -763,7 +903,7 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 		
 		// Check for btn-advanced clickable row (or its children)
 		if (elId == L"btn-advanced" || className.find(L"setting-row-clickable") != std::wstring::npos) {
-			OutputDebugStringW(L"OpenKey: btn-advanced clicked - toggling via hidden input\n");
+
 			
 			// Find hidden input and toggle its value - JS will handle UI changes via CSS
 			sciter::dom::element root = this->root();
@@ -775,7 +915,7 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 				checkbox.set_state(isChecked ? 0 : STATE_CHECKED, STATE_CHECKED);
 				m_isExpanded = !isChecked;
 				
-				OutputDebugStringW(m_isExpanded ? L"OpenKey: Checkbox now CHECKED (expand)\n" : L"OpenKey: Checkbox now UNCHECKED (collapse)\n");
+
 				
 				// Resize window after CSS transition
 				SetTimer(get_hwnd(), TIMER_RESIZE_WINDOW, 100, NULL);
@@ -854,6 +994,62 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 				notifyMainProcess();
 				return true;
 			}
+			// === TAB 3: SYSTEM SETTINGS (Hệ thống) ===
+			else if (id == L"metro-support") {
+				vSupportMetroApp = isChecked ? 1 : 0;
+				APP_SET_DATA(vSupportMetroApp, vSupportMetroApp);
+				notifyMainProcess();
+				return true;
+			}
+			else if (id == L"desktop-shortcut") {
+				vCreateDesktopShortcut = isChecked ? 1 : 0;
+				APP_SET_DATA(vCreateDesktopShortcut, vCreateDesktopShortcut);
+				// Note: Desktop shortcut creation is handled by main process on startup
+				// or via OpenKeySettingsController. Just save the setting here.
+				notifyMainProcess();
+				return true;
+			}
+			else if (id == L"run-startup") {
+				vRunWithWindows = isChecked ? 1 : 0;
+				APP_SET_DATA(vRunWithWindows, vRunWithWindows);
+				// registerRunOnStartup takes int: 1 = register, 0 = unregister
+				OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
+				return true;
+			}
+			else if (id == L"show-on-startup") {
+				vShowOnStartUp = isChecked ? 1 : 0;
+				APP_SET_DATA(vShowOnStartUp, vShowOnStartUp);
+				return true;
+			}
+			else if (id == L"modern-icon") {
+				// vUseGrayIcon = 0 means modern (colored)
+				vUseGrayIcon = isChecked ? 0 : 1;
+				APP_SET_DATA(vUseGrayIcon, vUseGrayIcon);
+				notifyMainProcess();
+				return true;
+			}
+			else if (id == L"chromium-fix") {
+				vFixChromiumBrowser = isChecked ? 1 : 0;
+				APP_SET_DATA(vFixChromiumBrowser, vFixChromiumBrowser);
+				notifyMainProcess();
+				return true;
+			}
+			else if (id == L"run-admin") {
+				vRunAsAdmin = isChecked ? 1 : 0;
+				APP_SET_DATA(vRunAsAdmin, vRunAsAdmin);
+				// Re-register startup with/without admin if startup is enabled
+				if (vRunWithWindows) {
+					OpenKeyHelper::registerRunOnStartup(vRunWithWindows);
+				}
+				return true;
+			}
+			else if (id == L"use-clipboard") {
+				// vSendKeyStepByStep = 0 means use clipboard
+				vSendKeyStepByStep = isChecked ? 0 : 1;
+				APP_SET_DATA(vSendKeyStepByStep, vSendKeyStepByStep);
+				notifyMainProcess();
+				return true;
+			}
 		}
 	}
 	
@@ -861,16 +1057,13 @@ bool SettingsDialog::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 }
 
 void SettingsDialog::onLanguageToggle(bool isEnglish) {
-	OutputDebugStringW(L"OpenKey: SOM onLanguageToggle called!\n");
+
 	vLanguage = isEnglish ? 0 : 1;
 	APP_SET_DATA(vLanguage, vLanguage);
 	notifyMainProcess();
 }
 
 void SettingsDialog::onInputTypeChange(int value) {
-	wchar_t msg[128];
-	swprintf_s(msg, L"OpenKey: SOM onInputTypeChange called, value=%d\n", value);
-	OutputDebugStringW(msg);
 	vInputType = value;
 	APP_SET_DATA(vInputType, vInputType);
 	notifyMainProcess();
@@ -953,14 +1146,10 @@ void SettingsDialog::onOpenAdvancedSettings() {
 void SettingsDialog::openAdvancedSettings() {
 	// Toggle expansion state - handled by JavaScript
 	// Just call the JS function if we need to programmatically toggle
-	OutputDebugStringW(L"OpenKey: openAdvancedSettings called\n");
+
 }
 
 void SettingsDialog::onExpandChange(bool isExpanded) {
-	wchar_t msg[128];
-	swprintf_s(msg, L"OpenKey: onExpandChange called, isExpanded=%d\n", isExpanded);
-	OutputDebugStringW(msg);
-	
 	m_isExpanded = isExpanded;
 	
 	// Set timer to resize window after CSS transition (300ms + 50ms buffer)
@@ -968,7 +1157,7 @@ void SettingsDialog::onExpandChange(bool isExpanded) {
 }
 
 void SettingsDialog::recalcWindowSize() {
-	OutputDebugStringW(L"OpenKey: recalcWindowSize called\n");
+
 	
 	// Get current window position
 	RECT rc;
@@ -994,9 +1183,5 @@ void SettingsDialog::recalcWindowSize() {
 	// IMPORTANT: Re-apply acrylic effect after resize to refresh blur region
 	// Without this, Windows leaves ghost blur artifacts when window shrinks
 	enableAcrylicEffect();
-	
-	wchar_t sizeMsg[128];
-	swprintf_s(sizeMsg, L"OpenKey: Window resized to %dx%d (auto-fit)\n", newWidth, newHeight);
-	OutputDebugStringW(sizeMsg);
 }
 

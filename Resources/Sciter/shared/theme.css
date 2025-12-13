@@ -1,0 +1,131 @@
+/* OpenKey Theme - Pastel Frosted Glass Edition */
+
+:root {
+    /* Primary Brand Colors (stronger blue for contrast) */
+    --color-primary: #3B82F6;
+    --color-primary-hover: #2563EB;
+    --color-primary-light: rgba(59, 130, 246, 0.15);
+    --color-primary-medium: rgba(59, 130, 246, 0.25);
+
+    /* Danger/Error Colors (soft warm red) */
+    --color-danger: #F28C8C;
+    --color-danger-hover: #E47878;
+    --color-danger-light: rgba(242, 140, 140, 0.25);
+
+    /* Warning Colors (pastel amber) */
+    --color-warning: #F2C76E;
+
+    /* Toggle Switch Colors */
+    --toggle-off-bg: #9CA3AF;
+    /* Darker gray for better visibility */
+    --toggle-on-bg: #F2A8A3;
+    /* warm pastel for default toggles */
+    --toggle-thumb-bg: white;
+    --toggle-label-off: #4A4A4A;
+    --toggle-label-on: white;
+
+    /* V/E Language Toggle (clean pastel identity) */
+    --toggle-ve-bg: #F7B7B5;
+    /* Vietnamese: coral-pastel */
+    --toggle-ve-bg-english: #AFCFFB;
+    /* English: sky-pastel */
+    --toggle-ve-text-v: #2E2E2E;
+    --toggle-ve-text-e: #1C6CDF;
+
+    /* Text Colors */
+    --text-primary: #1F2937;
+    --text-secondary: #4B5563;
+    --text-muted: #8A8F98;
+    --text-dark: #1A1B1F;
+    --text-light: #4E4F54;
+
+    /* Background Colors (blur-friendly glass palette) */
+    --bg-glass: rgba(255, 255, 255, 0.18);
+    --bg-glass-light: rgba(255, 255, 255, 0.45);
+    --bg-card: rgba(255, 255, 255, 0.35);
+    --bg-card-solid: rgba(255, 255, 255, 0.85);
+    --bg-card-tab: rgba(255, 255, 255, 0.6);
+    --bg-title-bar: rgba(255, 255, 255, 0.12);
+    --bg-hover: rgba(0, 0, 0, 0.05);
+    --bg-hover-subtle: rgba(0, 0, 0, 0.03);
+    --bg-primary-hover: rgba(124, 184, 248, 0.15);
+
+    /* Border Colors (soft + translucent for glass effect) */
+    --border-light: rgba(0, 0, 0, 0.04);
+    --border-medium: rgba(0, 0, 0, 0.06);
+    --border-input: rgba(0, 0, 0, 0.12);
+    --border-row-light: rgba(0, 0, 0, 0.03);
+    --border-inset: rgba(0, 0, 0, 0.15);
+    --border-card: rgba(160, 170, 185, 0.35);
+    --border-row: rgba(200, 205, 215, 0.55);
+
+    /* Focus Ring (soft blue halo) */
+    --focus-ring: 0 0 0 2px rgba(124, 184, 248, 0.35);
+
+    /* Shadows (more airy, glass-like) */
+    --shadow-card: 0 10px 38px rgba(0, 0, 0, 0.08);
+    --shadow-thumb: 0 2px 6px rgba(0, 0, 0, 0.2);
+    --shadow-thumb-small: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+    /* Radii */
+    --radius-small: 4px;
+    --radius-medium: 6px;
+    --radius-large: 10px;
+    --radius-round: 50%;
+
+    /* Font */
+    --font-family: 'Segoe UI', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+}
+
+/* ============================================
+   CUSTOM TOOLTIP - Shared Glassmorphism Style
+   Use data-tooltip attribute (NOT title) to avoid native tooltip!
+   ============================================ */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    padding: 8px 12px;
+    background: rgba(30, 30, 40, 0.92);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    border-radius: 8px;
+    white-space: normal;
+    max-width: 200px;
+    text-align: left;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    animation: tooltipFadeIn 0.2s ease;
+    pointer-events: none;
+}
+
+/* Arrow pointing up */
+[data-tooltip]:hover::before {
+    content: "";
+    position: absolute;
+    top: calc(100% + 2px);
+    right: 10px;
+    border: 6px solid transparent;
+    border-bottom-color: rgba(30, 30, 40, 0.92);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}

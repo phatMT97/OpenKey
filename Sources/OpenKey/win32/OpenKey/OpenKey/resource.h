@@ -191,6 +191,10 @@
 #define IDS_STRING_EXCLUDE_APPS         1074
 #define IDC_EDIT_APP_NAME               1075
 #define IDC_BUTTON_ADD_MANUAL           1076
+
+// Sciter DLL resource (Release build only)
+#define IDR_SCITER_DLL                  200
+
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

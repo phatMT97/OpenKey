@@ -135,6 +135,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <PreBuildEvent>
+      <Command>echo Packing Sciter resources...
+"$(SolutionDir)..\..\..\..\windows\packfolder.exe" "$(SolutionDir)..\..\..\..\Resources\Sciter" "$(SolutionDir)..\..\..\..\Resources\Sciter\resources.cpp" -v "resources"</Command>
+      <Message>Packing Sciter UI Resources</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -156,6 +164,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <PreBuildEvent>
+      <Command>echo Packing Sciter resources...
+"$(SolutionDir)..\..\..\..\windows\packfolder.exe" "$(SolutionDir)..\..\..\..\Resources\Sciter" "$(SolutionDir)..\..\..\..\Resources\Sciter\resources.cpp" -v "resources"</Command>
+      <Message>Packing Sciter UI Resources</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\engine\ConvertTool.h" />
@@ -173,6 +189,7 @@
     <ClInclude Include="BaseDialog.h" />
     <ClInclude Include="ConvertToolDialog.h" />
     <ClInclude Include="ExcludedAppsDialog.h" />
+    <ClInclude Include="ExcludedAppsDialogSciter.h" />
     <ClInclude Include="MacroDialog.h" />
     <ClInclude Include="MacroDialogSciter.h" />
     <ClInclude Include="MainControlDialog.h" />
@@ -183,6 +200,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemTrayHelper.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="SciterDllLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\engine\ConvertTool.cpp" />
@@ -196,6 +214,7 @@
     <ClCompile Include="BaseDialog.cpp" />
     <ClCompile Include="ConvertToolDialog.cpp" />
     <ClCompile Include="ExcludedAppsDialog.cpp" />
+    <ClCompile Include="ExcludedAppsDialogSciter.cpp" />
     <ClCompile Include="MacroDialog.cpp" />
     <ClCompile Include="MacroDialogSciter.cpp" />
     <ClCompile Include="main.cpp" />
@@ -211,6 +230,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SystemTrayHelper.cpp" />
+    <ClCompile Include="SciterDllLoader.cpp" />
+    <ClCompile Include="SciterArchive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenKey.rc" />

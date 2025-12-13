@@ -62,7 +62,7 @@ bool AppDelegate::isDialogMsg(MSG & msg) const {
 		// AboutDialog is now a Sciter window, not a Win32 dialog, so it doesn't need IsDialogMessage
 }
 
-#define ABOUT_WINDOW_TITLE L"About OpenKey"
+#define ABOUT_WINDOW_TITLE L"V\u1EC1 NextKey"
 
 void AppDelegate::onOpenKeyAbout() {
 	// Anti-spam: Check if About window already exists
@@ -84,8 +84,8 @@ void AppDelegate::onOpenKeyAbout() {
 	swprintf_s(cmdLine, L"\"%s\" --about", exePath);
 	
 	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-		CloseHandle(pi.hProcess);  // Don't wait
 		CloseHandle(pi.hThread);
+		trackChildProcess(pi.hProcess);  // Store handle for cleanup
 	}
 }
 
@@ -186,8 +186,8 @@ void AppDelegate::createMainDialog() {
 	swprintf_s(cmdLine, L"\"%s\" --settings", exePath);
 	
 	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
+		trackChildProcess(pi.hProcess);  // Store handle for cleanup
 	}
 }
 
@@ -220,6 +220,9 @@ void AppDelegate::onInputMethodChangedFromHotKey() {
 		mainDialog->fillData();
 	}
 	SystemTrayHelper::updateData();
+	
+	// Notify UI subprocesses (Settings dialog) of language change
+	NotifyUILanguageChange(vLanguage != 0);  // true = Vietnamese
 }
 
 void AppDelegate::onDefaultConfig() {
@@ -314,8 +317,8 @@ void AppDelegate::onMacroTable() {
 	swprintf_s(cmdLine, L"\"%s\" --macro", exePath);
 	
 	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
+		trackChildProcess(pi.hProcess);  // Store handle for cleanup
 	}
 }
 
@@ -348,6 +351,33 @@ void AppDelegate::onManageExcludedApps() {
 	}
 }
 
+// "Ứng dụng loại trừ" in Unicode escape sequences
+#define EXCLUDED_APPS_WINDOW_TITLE L"\u1EE8ng d\u1EE5ng lo\u1EA1i tr\u1EEB"
+
+void AppDelegate::onSpawnExcludedAppsSciter() {
+	// Anti-spam: Check if Excluded Apps window already exists
+	HWND existingWindow = FindWindowW(NULL, EXCLUDED_APPS_WINDOW_TITLE);
+	if (existingWindow) {
+		SetForegroundWindow(existingWindow);
+		return;
+	}
+	
+	// Spawn excluded apps subprocess (Fire and Forget)
+	WCHAR exePath[MAX_PATH];
+	GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	
+	STARTUPINFOW si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	
+	wchar_t cmdLine[MAX_PATH + 30];
+	swprintf_s(cmdLine, L"\"%s\" --excludedapps", exePath);
+	
+	if (CreateProcessW(NULL, cmdLine, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+		CloseHandle(pi.hThread);
+		trackChildProcess(pi.hProcess);  // Store handle for cleanup
+	}
+}
+
 void AppDelegate::onInputType(const int & type) {
 	APP_SET_DATA(vInputType, type);
 	if (mainDialog) {
@@ -371,7 +401,26 @@ void AppDelegate::onControlPanel() {
 }
 
 void AppDelegate::onOpenKeyExit() {
+	// Terminate all subprocess dialogs at once - no FindWindow needed!
+	terminateAllChildren();
+	
 	OpenKeyManager::freeEngine();
 	SystemTrayHelper::removeSystemTray();
 	PostQuitMessage(0);
+}
+
+void AppDelegate::trackChildProcess(HANDLE hProcess) {
+	if (hProcess) {
+		m_childProcesses.push_back(hProcess);
+	}
+}
+
+void AppDelegate::terminateAllChildren() {
+	for (HANDLE h : m_childProcesses) {
+		if (h) {
+			TerminateProcess(h, 0);
+			CloseHandle(h);
+		}
+	}
+	m_childProcesses.clear();
 }

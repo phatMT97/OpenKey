@@ -42,6 +42,16 @@ Khắc phục lỗi nghiêm trọng khi người dùng gõ nhầm và xóa (back
 
 > 👉 Xem chi tiết kỹ thuật tại [BACKSPACE_BUG_FIX.md](Docs/BACKSPACE_BUG_FIX.md)
 
+### 6. 🎨 Giao diện NextKey (Modern UI with Glassmorphism)
+Thiết kế lại hoàn toàn giao diện người dùng với phong cách hiện đại:
+- **Glassmorphism Design**: Hiệu ứng kính mờ (frosted glass) với độ trong suốt và blur tinh tế.
+- **Pastel Color Palette**: Bảng màu pastel nhẹ nhàng, dễ nhìn trong thời gian dài.
+- **Responsive Layout**: Giao diện tự điều chỉnh với panel Settings compact và Advanced settings mở rộng.
+- **Modern Toggle Switches**: Công tắc bật/tắt kiểu iOS với animation mượt mà.
+- **Tab Navigation**: Phân chia cài đặt theo tabs: Bộ gõ, Gõ tắt, Hệ thống, Thông tin.
+- **Real-time V/E Toggle**: Đồng bộ trạng thái Anh/Việt realtime giữa tray icon và UI.
+
+> 🎨 Được xây dựng trên nền tảng **Sciter** - HTML/CSS rendering engine nhẹ và nhanh.
 
 
 ---

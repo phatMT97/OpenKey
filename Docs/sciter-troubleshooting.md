@@ -86,11 +86,15 @@ OR add `SW_ENABLE_DEBUG` flag in window creation:
 | Issue | Cause | Fix |
 |-------|-------|-----|
 | Assertion on delete | Sciter cleanup issue | Use subprocess pattern, call `ExitProcess(0)` |
-| Multiple dialogs open | No single-instance check | Use `FindWindow()` before spawn |
+| Multiple dialogs open | FindWindow timing issue | Use Named Mutex + FindWindow fallback |
 | find_first returns null | Wrong string type | Use `char*` not `wchar_t*`: `find_first("#id")` |
 | Settings not saving | Registry not synced | Call `notifyMainProcess()` with WM_USER+101 |
 | Main process not updating | Not reloading registry | Add `APP_GET_DATA` in WM_USER+101 handler |
 | Heap corruption | getRegBinary memory issue | Don't `delete[]` returned pointer (it's static) |
+| Vietnamese text garbled | Source file encoding | Use Unicode escape sequences `\uXXXX` |
+| Toggles show default values | Subprocess has empty globals | Add `APP_GET_DATA` in constructor for all settings |
+| Function does not take 0 args | Wrong function signature | Check `.h` file: `registerRunOnStartup(int)` takes 1=on, 0=off |
+| Function is not a member | Function doesn't exist | Check `.h` file before calling. Some features need `notifyMainProcess()` |
 
 ### Window Issues
 

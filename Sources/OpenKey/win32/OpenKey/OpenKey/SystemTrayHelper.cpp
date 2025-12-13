@@ -135,6 +135,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		APP_GET_DATA(vQuickTelex, 0);
 		APP_GET_DATA(vQuickStartConsonant, 0);
 		APP_GET_DATA(vQuickEndConsonant, 0);
+		APP_GET_DATA(vExcludeApps, 1);
+		// Khác tab settings
+		APP_GET_DATA(vSupportMetroApp, 0);
+		APP_GET_DATA(vUseGrayIcon, 0);
+		APP_GET_DATA(vFixChromiumBrowser, 0);
+		APP_GET_DATA(vSendKeyStepByStep, 1);  // Clipboard send keys
 		
 		// Reload macro data from registry
 		// NOTE: getRegBinary returns a static pointer - DO NOT delete[] it
@@ -150,6 +156,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 		
+		// Reload English-only apps data from registry
+		{
+			extern void initEnglishOnlyApps(const Byte* pData, const int& size);
+			DWORD appsDataSize = 0;
+			BYTE* appsData = OpenKeyHelper::getRegBinary(_T("englishOnlyApps"), appsDataSize);
+			if (appsData && appsDataSize > 0) {
+				initEnglishOnlyApps(appsData, (int)appsDataSize);
+			} else {
+				initEnglishOnlyApps(nullptr, 0);
+			}
+		}
+		
 		// Refresh tray icon and menu to reflect new settings
 		SystemTrayHelper::updateData();
 		break;
@@ -157,6 +175,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	// Handle macro table open request from SettingsDialog subprocess
 	case WM_USER+103:
 		AppDelegate::getInstance()->onMacroTable();
+		break;
+	
+	// Handle excluded apps dialog open request from SettingsDialog subprocess
+	case WM_USER+104:
+		AppDelegate::getInstance()->onSpawnExcludedAppsSciter();
 		break;
 		
 	// Handle session change (lock/unlock)

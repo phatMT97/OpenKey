@@ -50,6 +50,14 @@ IDI_ICON_DEFAULT_BUTTON ICON                    "DefaultButton.ico"
 
 IDI_ICON_START_CONVERT  ICON                    "StartConvert.ico"
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// Sciter DLL (Release build only - embedded for single-file deployment)
+//
+#ifdef NDEBUG
+IDR_SCITER_DLL          RCDATA                  "..\\..\\..\\..\\..\\windows\\x64\\sciter.dll"
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

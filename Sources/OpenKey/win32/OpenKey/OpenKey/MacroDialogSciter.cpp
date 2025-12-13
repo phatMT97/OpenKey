@@ -72,7 +72,15 @@ MacroDialogSciter::MacroDialogSciter()
 		// Do NOT delete[] macroData - it's managed by OpenKeyHelper
 	}
 	
-	// Load HTML file
+	// Load HTML
+#ifdef NDEBUG
+	// Release: load from embedded resources (packed by packfolder.exe)
+	if (!load(WSTR("this://app/macro/macro.html"))) {
+		MessageBoxW(NULL, L"Failed to load macro.html from resources", L"Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+#else
+	// Debug: load from file (allows hot-reload during development)
 	WCHAR exePath[MAX_PATH];
 	GetModuleFileNameW(NULL, exePath, MAX_PATH);
 	WCHAR* lastSlash = wcsrchr(exePath, L'\\');
@@ -85,6 +93,7 @@ MacroDialogSciter::MacroDialogSciter()
 		MessageBoxW(NULL, htmlPath, L"Failed to load macro.html", MB_OK | MB_ICONERROR);
 		return;
 	}
+#endif
 	
 	// Show the window
 	expand();
@@ -95,7 +104,7 @@ MacroDialogSciter::MacroDialogSciter()
 	
 	// Use fixed window size (matches CSS container: 380x450)
 	SetWindowPos(get_hwnd(), NULL, 0, 0, 380, 450, SWP_NOMOVE | SWP_NOZORDER);
-	OutputDebugStringW(L"MacroDialog: window set to fixed size 380x450\n");
+
 	
 	// Center window on screen
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -203,7 +212,7 @@ LRESULT CALLBACK MacroDialogSciter::SubclassProc(HWND hwnd, UINT msg, WPARAM wPa
 bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params) {
 	// Handle DOCUMENT_READY to populate macro list
 	if (params.cmd == DOCUMENT_READY) {
-		OutputDebugStringW(L"MacroDialog: DOCUMENT_READY - calling fillMacroList()\n");
+
 		fillMacroList();
 		// Fixed window size - no need to recalc
 		return true;
@@ -219,7 +228,7 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 			sciter::value actionVal = el.get_value();
 			std::wstring action = actionVal.is_string() ? actionVal.get<std::wstring>() : L"";
 			
-			OutputDebugStringW((L"MacroDialog: val-action changed to '" + action + L"'\n").c_str());
+
 			
 			if (action == L"add") {
 				sciter::dom::element nameEl = root.find_first("#val-macro-name");
@@ -232,7 +241,7 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 					std::wstring content = contentVal.is_string() ? contentVal.get<std::wstring>() : L"";
 					
 					if (!name.empty() && !content.empty()) {
-						OutputDebugStringW(L"MacroDialog: calling onAddMacro()\n");
+
 						onAddMacro(name, content);
 					}
 				}
@@ -248,7 +257,7 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 					std::wstring name = nameVal.is_string() ? nameVal.get<std::wstring>() : L"";
 					
 					if (!name.empty()) {
-						OutputDebugStringW(L"MacroDialog: calling onDeleteMacro()\n");
+
 						onDeleteMacro(name);
 					}
 				}
@@ -257,21 +266,21 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 			}
 			
 			if (action == L"import") {
-				OutputDebugStringW(L"MacroDialog: import action\n");
+
 				onImportMacro();
 				el.set_value(sciter::value(L""));
 				return true;
 			}
 			
 			if (action == L"export") {
-				OutputDebugStringW(L"MacroDialog: export action\n");
+
 				onExportMacro();
 				el.set_value(sciter::value(L""));
 				return true;
 			}
 			
 			if (action == L"close") {
-				OutputDebugStringW(L"MacroDialog: close action\n");
+
 				PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
 				return true;
 			}
@@ -284,7 +293,7 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 		std::wstring id = el.get_attribute("id");
 		
 		if (id == L"btn-close") {
-			OutputDebugStringW(L"MacroDialog: btn-close clicked directly\n");
+
 			PostMessage(get_hwnd(), WM_CLOSE, 0, 0);
 			return true;
 		}
@@ -327,7 +336,7 @@ bool MacroDialogSciter::handle_event(HELEMENT he, BEHAVIOR_EVENT_PARAMS& params)
 }
 
 void MacroDialogSciter::fillMacroList() {
-	OutputDebugStringW(L"MacroDialog: fillMacroList() called\n");
+
 	
 	// Get all macros from engine
 	keys.clear();
@@ -335,10 +344,7 @@ void MacroDialogSciter::fillMacroList() {
 	macroContent.clear();
 	getAllMacro(keys, macroText, macroContent);
 	
-	wchar_t debugMsg[256];
-	swprintf_s(debugMsg, L"MacroDialog: Found %zu macros\n", macroText.size());
-	OutputDebugStringW(debugMsg);
-	
+
 	// Call JS function to clear list (use call_function inherited from sciter::window)
 	call_function("clearMacroList");
 	
@@ -351,11 +357,11 @@ void MacroDialogSciter::fillMacroList() {
 		call_function("addMacroToList", wName.c_str(), wContent.c_str());
 	}
 	
-	OutputDebugStringW(L"MacroDialog: fillMacroList() completed\n");
+
 }
 
 void MacroDialogSciter::saveAndReload() {
-	OutputDebugStringW(L"MacroDialog: saveAndReload() called\n");
+
 	
 	// Save macros to registry
 	std::vector<Byte> macroData;
@@ -366,7 +372,7 @@ void MacroDialogSciter::saveAndReload() {
 	HWND mainWnd = FindWindow(_T("OpenKeyVietnameseInputMethod"), NULL);
 	if (mainWnd) {
 		PostMessage(mainWnd, WM_USER + 101, 0, 0);
-		OutputDebugStringW(L"MacroDialog: Notified main process to reload macros\n");
+
 	}
 	
 	// Reload list
@@ -375,7 +381,7 @@ void MacroDialogSciter::saveAndReload() {
 	// Reset button text via JS (use call_function inherited from sciter::window)
 	call_function("updateAddButtonText");
 	
-	OutputDebugStringW(L"MacroDialog: saveAndReload() completed\n");
+
 }
 
 void MacroDialogSciter::onAddMacro(const std::wstring& name, const std::wstring& content) {
@@ -384,20 +390,9 @@ void MacroDialogSciter::onAddMacro(const std::wstring& name, const std::wstring&
 }
 
 void MacroDialogSciter::onDeleteMacro(const std::wstring& name) {
-	wchar_t debugMsg[512];
-	swprintf_s(debugMsg, L"MacroDialog: onDeleteMacro name='%s'\n", name.c_str());
-	OutputDebugStringW(debugMsg);
-	
 	std::string utf8Name = wideStringToUtf8(name);
-	OutputDebugStringA("MacroDialog: UTF-8 name = '");
-	OutputDebugStringA(utf8Name.c_str());
-	OutputDebugStringA("'\n");
-	
 	if (deleteMacro(utf8Name)) {
-		OutputDebugStringW(L"MacroDialog: deleteMacro succeeded\n");
 		saveAndReload();
-	} else {
-		OutputDebugStringW(L"MacroDialog: deleteMacro FAILED\n");
 	}
 }
 

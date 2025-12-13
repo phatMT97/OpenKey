@@ -17,6 +17,7 @@ redistribute your new version, it MUST be open source.
 #include "AboutDialog.h"
 #include "ConvertToolDialog.h"
 #include "MacroDialog.h"
+#include <vector>
 
 class BaseDialog;
 class AboutDialog; // Forward declaration for Sciter window
@@ -26,6 +27,7 @@ private:
 	HINSTANCE hInstance;
 	BaseDialog* mainDialog = NULL, *macroDialog = NULL, *convertDialog = NULL, *excludedAppsDialog = NULL;
 	AboutDialog* aboutDialog = NULL; // Sciter window - managed separately
+	std::vector<HANDLE> m_childProcesses;  // Track subprocess handles for cleanup
 private:
 	bool isDialogMsg(MSG & msg) const;
 	void checkUpdate();
@@ -36,6 +38,11 @@ public:
 	void createMainDialog();
 	void closeDialog(BaseDialog* dialog);
 	void closeAboutDialog(); // Separate method for AboutDialog
+	
+	// Subprocess management
+	void trackChildProcess(HANDLE hProcess);
+	void terminateAllChildren();
+	
 public: //event
 	void onInputMethodChangedFromHotKey();
 	void onDefaultConfig();
@@ -49,6 +56,7 @@ public: //event
 	void onConvertTool();
 	void onQuickConvert();
 	void onManageExcludedApps();
+	void onSpawnExcludedAppsSciter();  // Spawn excluded apps Sciter subprocess (called via IPC)
 
 	void onInputType(const int& type);
 	void onTableCode(const int& code);

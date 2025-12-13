@@ -25,7 +25,10 @@ static vector<Uint8> _breakCode = {
     KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE, KEY_BACK_SLASH, KEY_MINUS, KEY_EQUALS, KEY_BACKQUOTE, KEY_TAB
 #if _WIN32
 	, VK_INSERT, VK_HOME, VK_END, VK_DELETE, VK_PRIOR, VK_NEXT, VK_SNAPSHOT, VK_PRINT, VK_SELECT, VK_HELP,
-	VK_EXECUTE, VK_NUMLOCK, VK_SCROLL
+	VK_EXECUTE, VK_NUMLOCK, VK_SCROLL,
+	// Fix: CapsLock and other non-character keys should break session to prevent buffer pollution
+	VK_CAPITAL, VK_PAUSE, VK_APPS,
+	VK_F1, VK_F2, VK_F3, VK_F4, VK_F5, VK_F6, VK_F7, VK_F8, VK_F9, VK_F10, VK_F11, VK_F12
 #endif
 };
 

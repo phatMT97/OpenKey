@@ -1,16 +1,18 @@
 /* OpenKey Settings - Glassmorphism UI for Sciter */
+@import url("../shared/theme.css");
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+    font-family: var(--font-family);
+    font-weight: 500;
 }
 
 html,
 body {
     background: transparent;
-    color: #333;
+    color: var(--text-primary);
     overflow: hidden;
     width: 100%;
     height: 100%;
@@ -23,11 +25,12 @@ body {
     width: 350px;
     height: auto;
     padding: 0;
-    background: rgba(30, 30, 30, 0.1);
+    background: var(--bg-glass);
     /* background: rgba(255, 255, 255, 0.05); */
     border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
+    /* No width transition - instant resize prevents blur ghost */
     /* No width transition - instant resize prevents blur ghost */
     font-size: 0;
     /* Eliminate inline-block whitespace */
@@ -43,15 +46,15 @@ body {
     padding: 0 12px;
     box-sizing: border-box;
     font-size: 14px;
-    background: rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--bg-title-bar);
+    border-bottom: 1px solid var(--border-light);
     cursor: default;
 }
 
 .title-text {
     font-size: 16px;
     font-weight: 700;
-    color: #007AFF;
+    color: var(--color-primary);
     letter-spacing: 0.5px;
     line-height: 36px;
 }
@@ -75,12 +78,12 @@ body {
     transition: background 0.2s ease;
     font-size: 20px;
     font-weight: 300;
-    color: #EB2121;
+    color: var(--color-danger);
     line-height: 1;
 }
 
 .btn-close:hover {
-    background: rgba(235, 33, 33, 0.15);
+    background: var(--color-danger-light);
 }
 
 .btn-close:focus {
@@ -113,7 +116,7 @@ body {
     display: none;
     width: 400px;
     padding: 16px;
-    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    border-left: 1px solid var(--border-light);
     font-size: 14px;
     box-sizing: border-box;
     opacity: 0;
@@ -168,76 +171,102 @@ body {
     align-items: center;
     gap: 8px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border-light);
     height: 40px;
     line-height: 40px;
 }
 
-/* V/E Language Labels */
-.lang-label {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-    padding: 0 4px;
-    flex-shrink: 0;
-    height: 28px;
-    line-height: 28px;
-    display: inline-block;
-}
+/* =============================================
+   V/E Language Toggle - Labels Inside Pill
+   ============================================= */
 
-.lang-label#lang-v {
-    color: #E53935;
-    /* Red for Vietnamese */
-}
-
-.lang-label#lang-e {
-    color: #007AFF;
-    /* Blue for English */
-}
-
-/* Toggle Switch - div-based per Sciter guide */
+/* Toggle Switch - Pink pill style for V/E */
 .toggle-switch {
     display: inline-block;
-    width: 50px;
-    height: 28px;
-    border-radius: 14px;
-    background-color: #E53935;
+    width: 90px;
+    height: 38px;
+    border-radius: 19px;
+    background: var(--toggle-ve-bg);
     position: relative;
     cursor: pointer;
     vertical-align: middle;
     flex-shrink: 0;
-    transition: background-color 0.3s ease;
+    transition: background 0.3s ease;
 }
 
+/* English mode - blue background */
 .toggle-switch.checked {
-    background-color: #007AFF;
+    background: var(--toggle-ve-bg-english);
 }
 
-.toggle-thumb {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+/* Labels INSIDE the white thumb */
+.toggle-label {
+    display: block;
     position: absolute;
-    top: 3px;
-    left: 3px;
+    top: 4px;
+    left: 4px;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    z-index: 3;
+    transition: left 0.3s ease, opacity 0.3s ease;
+}
+
+/* V - visible when unchecked (thumb on left) */
+.toggle-v {
+    color: var(--toggle-ve-text-v);
+    opacity: 1;
+}
+
+/* E - hidden when unchecked, follows thumb position */
+.toggle-e {
+    color: var(--toggle-ve-text-e);
+    opacity: 0;
+}
+
+/* White thumb */
+.toggle-switch .toggle-thumb {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--toggle-thumb-bg);
+    position: absolute;
+    top: 4px;
+    left: 4px;
     transition: left 0.3s ease;
+    z-index: 2;
 }
 
+/* Checked state (English mode) - thumb and labels move right */
 .toggle-switch.checked .toggle-thumb {
-    left: 25px;
+    left: 56px;
 }
 
-/* Small Toggle for settings rows - ensure visibility in all layouts */
+.toggle-switch.checked .toggle-label {
+    left: 56px;
+}
+
+/* When checked: V hides, E shows */
+.toggle-switch.checked .toggle-v {
+    opacity: 0;
+}
+
+.toggle-switch.checked .toggle-e {
+    opacity: 1;
+}
+
+/* Small Toggle for settings rows - I/O labels on background */
 .toggle-switch-small {
     display: inline-block !important;
     width: 40px;
     min-width: 40px;
-    height: 22px;
-    min-height: 22px;
-    border-radius: 11px;
-    background-color: #c0c0c0;
+    height: 20px;
+    min-height: 20px;
+    border-radius: 10px;
+    background-color: var(--toggle-off-bg);
     position: relative;
     cursor: pointer;
     vertical-align: middle;
@@ -245,40 +274,86 @@ body {
     transition: background-color 0.3s ease;
 }
 
+/* ON state - darker pink/red */
 .toggle-switch-small.checked {
-    background-color: #007AFF;
+    background-color: var(--toggle-on-bg);
 }
 
+/* I label on left side (visible when checked/ON - thumb moves right) */
+.toggle-label-i {
+    display: block;
+    position: absolute;
+    left: 6px;
+    top: 0;
+    height: 20px;
+    line-height: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--toggle-label-on);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+/* O label on right side (visible when unchecked/OFF - thumb on left) */
+.toggle-label-o {
+    display: block;
+    position: absolute;
+    right: 5px;
+    top: 0;
+    height: 20px;
+    line-height: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--toggle-label-off);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+/* When checked: show I, hide O */
+.toggle-switch-small.checked .toggle-label-i {
+    opacity: 1;
+}
+
+.toggle-switch-small.checked .toggle-label-o {
+    opacity: 0;
+}
+
+/* Oval thumb - longer/more oval shape */
 .toggle-thumb-small {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    width: 22px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: var(--toggle-thumb-bg);
     position: absolute;
     top: 2px;
     left: 2px;
     transition: left 0.3s ease;
+    z-index: 2;
 }
 
 .toggle-switch-small.checked .toggle-thumb-small {
-    left: 20px;
+    left: 16px;
 }
 
-/* Input Type Dropdown in Header */
+/* Input Type Dropdown in Header - flat modern style */
 .input-type-dropdown {
-    display: block;
-    padding: 4px 8px;
-    font-size: 14px;
+    display: inline-block;
+    padding: 6px 24px 6px 10px;
+    font-size: 13px;
+    font-weight: 500;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #333;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.4);
+    color: var(--text-primary);
     cursor: pointer;
     outline: none;
     flex-shrink: 0;
-    height: 28px;
-    line-height: 18px;
+    height: 32px;
+    vertical-align: middle;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 /* Settings Button (gear icon) */
@@ -299,7 +374,7 @@ body {
 }
 
 .btn-settings:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--bg-hover);
 }
 
 .btn-settings:focus {
@@ -310,17 +385,17 @@ body {
 .btn-settings svg {
     width: 20px;
     height: 20px;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .btn-settings:hover svg {
-    color: #007AFF;
+    color: var(--color-primary);
 }
 
 /* Settings Card */
 .settings-card {
     margin-top: 8px;
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--bg-card);
     border-radius: 12px;
     padding: 4px 16px;
 }
@@ -332,7 +407,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 8px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-row-light);
 }
 
 .setting-row:last-child {
@@ -349,7 +424,7 @@ body {
 .setting-label {
     font-size: 14px;
     font-weight: 500;
-    color: #333;
+    color: var(--text-primary);
     flex: 1;
 }
 
@@ -378,7 +453,7 @@ body {
 .switch-key-label {
     font-size: 12px;
     font-weight: 500;
-    color: #666;
+    color: var(--text-secondary);
     min-width: 28px;
 }
 
@@ -386,10 +461,10 @@ body {
 .switch-key-input {
     width: 32px;
     height: 24px;
-    border: 1px solid rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-input);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #333;
+    background: var(--bg-card-solid);
+    color: var(--text-primary);
     font-size: 14px;
     font-weight: 600;
     text-align: center;
@@ -398,22 +473,25 @@ body {
 }
 
 .switch-key-input:focus {
-    border-color: #007AFF;
-    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: var(--focus-ring);
 }
 
-/* Setting Dropdown inside card */
+/* Setting Dropdown inside card - flat modern style */
 .setting-dropdown {
-    display: block;
-    padding: 4px 8px;
-    font-size: 14px;
+    display: inline-block;
+    padding: 6px 24px 6px 10px;
+    font-size: 13px;
+    font-weight: 500;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #333;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.4);
+    color: var(--text-primary);
     cursor: pointer;
     outline: none;
-    min-width: 120px;
+    min-width: 100px;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 /* Advanced Settings Row - entire row is clickable */
@@ -425,18 +503,18 @@ body {
 }
 
 .setting-row-clickable:hover .setting-label {
-    color: #007AFF;
+    color: var(--color-primary);
 }
 
 .setting-row-clickable:hover .arrow-icon {
-    stroke: #007AFF;
+    stroke: var(--color-primary);
 }
 
 /* Arrow icon in clickable row */
 .arrow-icon {
     width: 20px;
     height: 20px;
-    stroke: #666;
+    stroke: var(--text-secondary);
     stroke-width: 2px;
     fill: none;
     transition: transform 0.3s ease;
@@ -444,11 +522,11 @@ body {
 }
 
 .setting-row-clickable:hover .arrow-icon {
-    stroke: #007AFF;
+    stroke: var(--color-primary);
 }
 
 .btn-advanced:hover {
-    color: #007AFF;
+    color: var(--color-primary);
 }
 
 .btn-advanced svg {
@@ -466,19 +544,19 @@ input[type="hidden"] {
 
 /* Action button style */
 .btn-action {
-    padding: 6px 16px;
+    padding: 8px 16px;
     font-size: 12px;
     font-weight: 500;
-    color: #007AFF;
-    background: transparent;
-    border: 1px solid #007AFF;
+    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--color-primary);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .btn-action:hover {
-    background: #007AFF;
+    background: var(--color-primary);
     color: white;
 }
 
@@ -500,14 +578,14 @@ input[type="hidden"] {
     padding: 8px 16px;
     font-size: 12px;
     font-weight: 500;
-    color: #666;
+    color: var(--text-secondary);
     text-align: center;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
     border: none;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-    background: rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 0 0 1px var(--border-inset);
+    background: var(--bg-card-tab);
 }
 
 /* First tab - round left corners */
@@ -521,15 +599,15 @@ input[type="hidden"] {
 }
 
 .tab-item:hover {
-    background: rgba(0, 122, 255, 0.1);
-    color: #007AFF;
-    box-shadow: inset 0 0 0 1px #007AFF;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .tab-item.active {
     color: white;
-    background: #007AFF;
-    box-shadow: inset 0 0 0 1px #007AFF;
+    background: var(--color-primary);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 /* Tab Content Area (below tabs) */
@@ -551,10 +629,10 @@ input[type="hidden"] {
 .tab-title {
     font-size: 16px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .tab-body {
@@ -572,45 +650,65 @@ input[type="hidden"] {
 .macro-list-placeholder {
     padding: 20px;
     text-align: center;
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--bg-hover-subtle);
     border-radius: 8px;
     margin-top: 12px;
 }
 
 .placeholder-text {
     font-size: 12px;
-    color: #999;
+    color: var(--text-muted);
 }
 
 /* About content styles */
 .about-content {
     text-align: center;
-    padding: 20px 0;
+    padding: 20px 16px;
 }
 
 .app-name {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 700;
-    color: #007AFF;
-    margin-bottom: 8px;
-}
-
-.app-version {
-    font-size: 14px;
-    color: #666;
+    color: var(--color-primary);
     margin-bottom: 4px;
 }
 
-.app-author {
-    font-size: 12px;
-    color: #999;
+.app-tagline {
+    font-size: 14px;
+    color: var(--text-primary);
     margin-bottom: 12px;
+}
+
+.app-version {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 16px;
+}
+
+.app-author {
+    font-size: 13px;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.app-origin {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.app-license {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 12px;
+    font-style: italic;
 }
 
 .app-link {
     display: inline-block;
     padding: 8px 16px;
-    background: #007AFF;
+    background: var(--color-primary);
     color: white;
     text-decoration: none;
     border-radius: 6px;
@@ -619,5 +717,5 @@ input[type="hidden"] {
 }
 
 .app-link:hover {
-    background: #0056b3;
+    background: var(--color-primary-hover);
 }

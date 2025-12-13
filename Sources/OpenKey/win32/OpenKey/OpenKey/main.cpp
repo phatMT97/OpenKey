@@ -16,7 +16,86 @@ redistribute your new version, it MUST be open source.
 #include "AboutDialog.h"
 #include "SettingsDialog.h"
 #include "MacroDialogSciter.h"
+#include "ExcludedAppsDialogSciter.h"
+#include "SciterDllLoader.h"
 #include <Shlobj.h>
+
+// Forward declaration - defined in SciterArchive.cpp
+void BindSciterResources();
+
+// Initialize Sciter: Load DLL (Release) and bind embedded resources
+bool InitSciter() {
+	LPCWSTR dllPath;
+	if (!EnsureSciterDll(dllPath)) {
+		MessageBoxW(NULL, L"EnsureSciterDll() failed - could not extract or find sciter.dll", L"OpenKey Error", MB_OK | MB_ICONERROR);
+		return false;
+	}
+	
+	// Load the DLL from our path
+	HMODULE hSciter = LoadLibraryW(dllPath);
+	if (!hSciter) {
+		WCHAR errMsg[512];
+		swprintf_s(errMsg, L"LoadLibraryW failed for: %s\nError code: %lu", dllPath, GetLastError());
+		MessageBoxW(NULL, errMsg, L"OpenKey Error", MB_OK | MB_ICONERROR);
+		return false;
+	}
+	
+	// Bind embedded UI resources (Release only, no-op in Debug)
+	BindSciterResources();
+	
+	return true;
+}
+
+// Helper: Run a sciter dialog with single-instance mutex protection
+template<typename DialogType>
+int runSingleInstanceDialog(const wchar_t* mutexName, const wchar_t* windowTitle) {
+	// Initialize Sciter DLL and resources first
+	if (!InitSciter()) return 1;
+	
+	// Single instance check using named mutex
+	HANDLE hMutex = CreateMutexW(NULL, TRUE, mutexName);
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		// Another instance is running - find and activate it
+		HWND existingWnd = FindWindowW(NULL, windowTitle);
+		if (existingWnd) {
+			SetForegroundWindow(existingWnd);
+		}
+		CloseHandle(hMutex);
+		return 0;
+	}
+	
+	// Enable Inspector for debugging
+	SciterSetOption(NULL, SCITER_SET_DEBUG_MODE, TRUE);
+	SciterSetOption(NULL, SCITER_SET_SCRIPT_RUNTIME_FEATURES,
+		ALLOW_FILE_IO |
+		ALLOW_SOCKET_IO |
+		ALLOW_EVAL |
+		ALLOW_SYSINFO);
+	
+	DialogType dialog;
+	dialog.show();
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return 0;
+}
+
+// Helper: Run simple dialog without mutex (no show() method)
+template<typename DialogType>
+int runSimpleDialog() {
+	// Initialize Sciter DLL and resources first
+	if (!InitSciter()) return 1;
+	
+	DialogType dialog;
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return 0;
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 						_In_opt_ HINSTANCE hPrevInstance,
@@ -26,50 +105,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	
 	// ===== ROUTER: Single Exe - Multi Personality =====
-	// Check if we're running as About UI subprocess
+	
+	// About dialog subprocess
 	if (lpCmdLine && wcsstr(lpCmdLine, L"--about")) {
-		// UI PROCESS MODE: Show About dialog only, then exit
-		// This process is isolated - 30MB RAM, freed on close
-		AboutDialog dialog;
-		
-		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		return 0;  // Clean exit, subprocess terminated
+		return runSimpleDialog<AboutDialog>();
 	}
 	
-	// Check if we're running as Settings UI subprocess
+	// Settings dialog subprocess
 	if (lpCmdLine && wcsstr(lpCmdLine, L"--settings")) {
-		SettingsDialog dialog;
-		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		return 0;
+		return runSimpleDialog<SettingsDialog>();
 	}
 	
-	// Check if we're running as Macro Table UI subprocess
+	// Macro dialog subprocess (with single-instance protection)
 	if (lpCmdLine && wcsstr(lpCmdLine, L"--macro")) {
-		// Enable Inspector for debugging
-		SciterSetOption(NULL, SCITER_SET_DEBUG_MODE, TRUE);
-		// Enable socket I/O for Inspector connection (Ctrl+Shift+I)
-		SciterSetOption(NULL, SCITER_SET_SCRIPT_RUNTIME_FEATURES,
-			ALLOW_FILE_IO |
-			ALLOW_SOCKET_IO |
-			ALLOW_EVAL |
-			ALLOW_SYSINFO);
-		
-		MacroDialogSciter dialog;
-		dialog.show();
-		MSG msg;
-		while (GetMessage(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		return 0;
+		return runSingleInstanceDialog<MacroDialogSciter>(
+			L"OpenKeyMacroDialogMutex", 
+			L"B\u1EA3ng g\u00F5 t\u1EAFt"
+		);
+	}
+	
+	// ExcludedApps dialog subprocess (with single-instance protection)
+	if (lpCmdLine && wcsstr(lpCmdLine, L"--excludedapps")) {
+		return runSingleInstanceDialog<ExcludedAppsDialogSciter>(
+			L"OpenKeyExcludedAppsDialogMutex", 
+			L"Lo\u1EA1i tr\u1EEB \u1EE9ng d\u1EE5ng"
+		);
 	}
 	
 	// ===== ENGINE PROCESS MODE: Normal app =====

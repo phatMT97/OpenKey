@@ -60,6 +60,19 @@ extern wchar_t _logBuffer[1024];
 
 extern void saveSmartSwitchKeyData();
 
+// Cross-process message for realtime V/E toggle sync
+// Uses RegisterWindowMessage for unique system-wide message ID
+inline UINT GetNextKeyUpdateMsg() {
+	static UINT msg = RegisterWindowMessage(L"NextKeyLanguageStateChange");
+	return msg;
+}
+
+// Notify all NextKey UI windows (Settings, etc.) of language change
+// Uses HWND_BROADCAST so no need to track window handles
+inline void NotifyUILanguageChange(bool isVietnamese) {
+	PostMessage(HWND_BROADCAST, GetNextKeyUpdateMsg(), (WPARAM)isVietnamese, 0);
+}
+
 extern int vLanguage;
 extern int vInputType;
 extern int vFreeMark;
