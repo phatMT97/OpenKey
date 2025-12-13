@@ -29,37 +29,41 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Download Sciter SDK
+    - name: Download Sciter SDK Files
       shell: powershell
       run: |
-        Write-Host "Downloading Sciter SDK..."
-        $sdkUrl = "https://github.com/nicecapj/nicecapj.github.io/raw/refs/heads/master/sciter/sciter-js-sdk-5.0.3.37_win64.zip"
-        $zipPath = "$env:RUNNER_TEMP\sciter-sdk.zip"
         $extractPath = "${{ github.workspace }}\windows"
+        $x64Path = "$extractPath\x64"
         
-        # Download SDK using curl (more reliable than Invoke-WebRequest for GitHub)
-        Write-Host "Downloading from $sdkUrl..."
-        curl.exe -L --retry 5 --retry-delay 10 --retry-connrefused -o $zipPath $sdkUrl
+        # Create directories
+        New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
+        New-Item -ItemType Directory -Force -Path $x64Path | Out-Null
         
-        if (-not (Test-Path $zipPath)) {
-          Write-Error "Failed to download Sciter SDK"
+        # Direct download URLs from GitLab (official Sciter repository)
+        $baseUrl = "https://gitlab.com/sciter-engine/sciter-js-sdk/-/raw/main/bin/windows/x64"
+        
+        Write-Host "Downloading packfolder.exe..."
+        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\packfolder.exe" "$baseUrl/packfolder.exe"
+        
+        Write-Host "Downloading sciter.dll..."
+        curl.exe -L --retry 3 --retry-delay 5 -o "$x64Path\sciter.dll" "$baseUrl/sciter.dll"
+        
+        # Also copy to windows root for compatibility
+        Copy-Item "$x64Path\packfolder.exe" -Destination $extractPath -Force
+        Copy-Item "$x64Path\sciter.dll" -Destination $extractPath -Force
+        
+        # Verify downloads
+        if (-not (Test-Path "$x64Path\packfolder.exe") -or (Get-Item "$x64Path\packfolder.exe").Length -lt 100000) {
+          Write-Error "packfolder.exe download failed or file too small"
+          exit 1
+        }
+        if (-not (Test-Path "$x64Path\sciter.dll") -or (Get-Item "$x64Path\sciter.dll").Length -lt 1000000) {
+          Write-Error "sciter.dll download failed or file too small"
           exit 1
         }
         
-        Write-Host "Download complete. File size: $((Get-Item $zipPath).Length) bytes"
-        
-        # Create windows directory
-        New-Item -ItemType Directory -Force -Path $extractPath | Out-Null
-        
-        # Extract SDK
-        Expand-Archive -Path $zipPath -DestinationPath $env:RUNNER_TEMP\sciter-sdk -Force
-        
-        # Copy required files (packfolder.exe)
-        Copy-Item "$env:RUNNER_TEMP\sciter-sdk\bin\windows\x64\packfolder.exe" -Destination $extractPath -Force
-        Copy-Item "$env:RUNNER_TEMP\sciter-sdk\bin\windows\x64\sciter.dll" -Destination $extractPath -Force
-        
-        Write-Host "Sciter SDK files copied to $extractPath"
-        Get-ChildItem $extractPath
+        Write-Host "Downloaded Sciter files:"
+        Get-ChildItem $x64Path
 
     - name: Build x86
       run: msbuild -m -target:Rebuild -p:Configuration=Release -p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
