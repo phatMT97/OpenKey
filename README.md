@@ -6,6 +6,15 @@
 [![Release](https://img.shields.io/github/v/release/phatMT97/VKey)](https://github.com/phatMT97/VKey/releases)
 
 <p align="center">
+  <a href="https://www.vkey.qd.je" target="_blank">
+    <img src="docs/images/vkey-website.png" alt="VKey Official Website - www.vkey.qd.je" width="850">
+  </a>
+</p>
+<p align="center">
+  🌐 <strong>Trang chủ chính thức: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — Giới thiệu trực quan, hướng dẫn sử dụng, tra cứu tính năng & tải về bản phát hành mới nhất
+</p>
+
+<p align="center">
   <img src="docs/images/vkey-compact.png" alt="VKey Compact View" width="250">
   <img src="docs/images/vkey-expanded.png" alt="VKey Expanded View" width="550">
 </p>
@@ -23,12 +32,14 @@
 
 ---
 
-**[Trang chủ](https://www.vkey.qd.je)** | **[Giới thiệu](#giới-thiệu)** | **[Hướng dẫn sử dụng](docs/GUIDE.md)** | **[Tính năng](#tính-năng)** | **[Cài đặt](#cài-đặt)** | **[Xác minh](#xác-minh-bản-tải-verify-release)** | **[Build](#build-từ-mã-nguồn)** | **[Kiến trúc](#kiến-trúc)** | **[English](#english-version)** | **[Credits](#credits)**
+**[🌐 Trang chủ](https://www.vkey.qd.je)** | **[Giới thiệu](#giới-thiệu)** | **[Hướng dẫn sử dụng](https://www.vkey.qd.je/guide/)** | **[Tính năng](#tính-năng)** | **[Cài đặt](#cài-đặt)** | **[Xác minh](#xác-minh-bản-tải-verify-release)** | **[Build](#build-từ-mã-nguồn)** | **[Kiến trúc](#kiến-trúc)** | **[English](#english-version)** | **[Credits](#credits)**
 
 ---
 
-> [!NOTE]
-> **📖 Hướng dẫn sử dụng:** Để xem hướng dẫn chi tiết các tính năng, phím tắt và câu hỏi thường gặp (FAQ), vui lòng đọc [Hướng dẫn sử dụng VKey (GUIDE.md)](docs/GUIDE.md).
+> [!TIP]
+> **🌐 Trang chủ chính thức:** Ghé thăm **[www.vkey.qd.je](https://www.vkey.qd.je)** để trải nghiệm giao diện trực quan, sao chép nhanh lệnh `winget install PhatMT97.VKey` và tải các bản phát hành mới nhất!
+>
+> **📖 Hướng dẫn sử dụng:** Xem hướng dẫn chi tiết các tính năng, phím tắt và câu hỏi thường gặp (FAQ) tại **[Hướng dẫn sử dụng trực tuyến (vkey.qd.je/guide)](https://www.vkey.qd.je/guide/)** (hoặc xem bản tài liệu tại [GUIDE.md](docs/GUIDE.md)).
 
 ## Giới thiệu
 
@@ -87,7 +98,7 @@ Engine mới, kiến trúc mới, C++20, hiệu năng cao, giao diện Glassmorp
   Độ trễ thấp, hỗ trợ song song Hook Engine & TSF (Context-Aware) để bắt ngữ cảnh tốt nhất, auto update, [tối ưu bảo mật](docs/SECURITY.md)
 
 * **Game-Friendly Telex**
-  Bật **Chế độ game** cho game đó (một phím tắt, ngay trong game) là chơi với Telex bình thường — WASD di chuyển mượt, không cần chuyển Simple Telex hay tắt tiếng Việt. [Hướng dẫn](docs/GUIDE.md#faq)
+  Bật **Chế độ game** cho game đó (một phím tắt, ngay trong game) là chơi với Telex bình thường — WASD di chuyển mượt, không cần chuyển Simple Telex hay tắt tiếng Việt. [Hướng dẫn](https://www.vkey.qd.je/guide/#game-mode)
 
 * **Float icon in FullScreen**
   Hỗ trợ hiển thị icon status V/E nổi trên màn hình - thích hợp các app FullScreen
@@ -96,7 +107,7 @@ Engine mới, kiến trúc mới, C++20, hiệu năng cao, giao diện Glassmorp
 
 ## Cài đặt
 
-Bạn có thể cài đặt VKey theo các cách sau:
+Bạn có thể tải trực tiếp từ **[Website chính thức](https://www.vkey.qd.je)** hoặc cài đặt theo các cách sau:
 
 ### Cách 1: Cài đặt nhanh qua WinGet (Khuyến nghị)
 Mở Command Prompt hoặc PowerShell và chạy lệnh sau:
@@ -214,7 +225,7 @@ VKey được thiết kế với kiến trúc gọn nhẹ, không phụ thuộc 
 </p>
 <p align="center"><em>VKey ở mức nghỉ ~0.3 MB sau khi idle — kiến trúc nhẹ, OS tự tối ưu</em></p>
 
-> ℹ️ Thấy Task Manager hiện ~1.7 MB chứ không phải 0.3 MB? Đó là *working set* lúc đang dùng — bình thường và khỏe mạnh, không phải rò rỉ bộ nhớ. Chi tiết: [GUIDE — FAQ về RAM](docs/GUIDE.md#faq).
+> ℹ️ Thấy Task Manager hiện ~1.7 MB chứ không phải 0.3 MB? Đó là *working set* lúc đang dùng — bình thường và khỏe mạnh, không phải rò rỉ bộ nhớ. Chi tiết: [Hướng dẫn trực tuyến — FAQ về RAM](https://www.vkey.qd.je/guide/#troubleshooting) (hoặc [GUIDE.md](docs/GUIDE.md#faq)).
 
 ---
 
@@ -225,8 +236,17 @@ VKey được thiết kế với kiến trúc gọn nhẹ, không phụ thuộc 
 
 ### About
 
+<p align="center">
+  <a href="https://www.vkey.qd.je" target="_blank">
+    <img src="docs/images/vkey-website.png" alt="VKey Official Website - www.vkey.qd.je" width="850">
+  </a>
+</p>
+<p align="center">
+  🌐 <strong>Official Website: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — Interactive showcase, user guides, and direct downloads
+</p>
+
 > [!NOTE]
-> **🌐 Official Website:** [https://www.vkey.qd.je](https://www.vkey.qd.je) | **📖 User Guide:** [docs/GUIDE.md](docs/GUIDE.md)
+> **🌐 Official Website:** [https://www.vkey.qd.je](https://www.vkey.qd.je) | **📖 User Guide:** [Online Guide (vkey.qd.je/guide)](https://www.vkey.qd.je/guide/) (or [GUIDE.md](docs/GUIDE.md))
 
 **VKey** is an open-source Vietnamese Input Method Editor (IME) for Windows, completely rewritten from [NextKey](https://github.com/phatMT97/VKey/tree/master) (based on [OpenKey](https://github.com/tuyenvm/OpenKey) by Mai Vu Tuyen).
 
@@ -285,7 +305,7 @@ New engine, new architecture, C++20, high performance, Glassmorphism UI. Engine 
 
 ### Installation
 
-You can install VKey using one of the following methods:
+You can download VKey directly from the **[Official Website](https://www.vkey.qd.je)** or install using one of the following methods:
 
 #### Method 1: Via WinGet (Recommended)
 Open Command Prompt or PowerShell and run:
@@ -332,7 +352,7 @@ VKey is built with a lean architecture and no heavy runtime dependencies, keepin
 </p>
 <p align="center"><em>VKey at its idle floor (~0.3 MB) — lightweight architecture, trimmed automatically by the OS</em></p>
 
-> ℹ️ Task Manager shows ~1.7 MB instead of 0.3 MB? That's the active *working set* — normal and healthy, not a memory leak. Details: [GUIDE — RAM FAQ](docs/GUIDE.md#faq).
+> ℹ️ Task Manager shows ~1.7 MB instead of 0.3 MB? That's the active *working set* — normal and healthy, not a memory leak. Details: [Online Guide — RAM FAQ](https://www.vkey.qd.je/guide/#troubleshooting) (or [GUIDE.md](docs/GUIDE.md#faq)).
 
 </details>
 
