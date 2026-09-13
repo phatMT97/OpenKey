@@ -11,7 +11,7 @@
   </a>
 </p>
 <p align="center">
-  🌐 <strong>Trang chủ chính thức: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — Giới thiệu trực quan, hướng dẫn sử dụng, tra cứu tính năng & tải về bản phát hành mới nhất
+  🌐 <strong>Trang chủ chính thức: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — <em>Tính năng, hướng dẫn & tải về</em>
 </p>
 
 <p align="center">
@@ -242,7 +242,7 @@ VKey được thiết kế với kiến trúc gọn nhẹ, không phụ thuộc 
   </a>
 </p>
 <p align="center">
-  🌐 <strong>Official Website: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — Interactive showcase, user guides, and direct downloads
+  🌐 <strong>Official Website: <a href="https://www.vkey.qd.je" target="_blank">www.vkey.qd.je</a></strong> — <em>Features, guide & downloads</em>
 </p>
 
 > [!NOTE]
